@@ -1,0 +1,299 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CONSUMER
+  BUSINESS_OWNER
+  ADMIN
+}
+
+enum BusinessStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+}
+
+enum BusinessCategory {
+  HALAL_FOOD
+  RESTAURANT
+  GROCERY
+  MASJID
+  AUTO_REPAIR
+  PLUMBING
+  ELECTRICAL
+  HANDYMAN
+  TUTORING
+  LEGAL_SERVICES
+  ACCOUNTING
+  HEALTH_WELLNESS
+  BARBER_SALON
+  CHILDCARE
+  COMMUNITY_AID
+  OTHER
+}
+
+enum BusinessTag {
+  MUSLIM_OWNED
+  HALAL_VERIFIED
+  SISTERS_FRIENDLY
+  KID_FRIENDLY
+  WHEELCHAIR_ACCESSIBLE
+  PRAYER_SPACE
+}
+
+enum VerificationType {
+  HALAL
+  MUSLIM_OWNED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  phone         String?
+  password      String
+  role          UserRole  @default(CONSUMER)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  businesses    Business[]
+  reviews       Review[]
+  sentMessages  Message[]  @relation("SentMessages")
+  conversations Conversation[]
+  accounts      Account[]
+  sessions      Session[]
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Business {
+  id          String           @id @default(cuid())
+  ownerId     String
+  name        String
+  slug        String           @unique
+  description String           @db.Text
+  category    BusinessCategory
+  address     String
+  city        String
+  state       String           @default("CA")
+  zipCode     String
+  latitude    Float
+  longitude   Float
+  phone       String
+  email       String?
+  website     String?
+  hours       Json? // {monday: {open: "09:00", close: "17:00"}, ...}
+  services    String[] // Array of services offered
+  status      BusinessStatus   @default(DRAFT)
+
+  // Masjid specific fields
+  prayerTimes Json? // {fajr: "05:30", dhuhr: "13:00", ...}
+  jummahTime  String?
+
+  // Aid organization specific
+  aidServices String[] // Services for community aid orgs
+  externalUrl String?  // External application URL
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  owner        User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  photos       BusinessPhoto[]
+  tags         BusinessTagRelation[]
+  reviews      Review[]
+  conversations Conversation[]
+  events       Event[]
+  verifications VerificationRequest[]
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([category])
+  @@index([latitude, longitude])
+  @@index([status])
+}
+
+model BusinessPhoto {
+  id         String   @id @default(cuid())
+  businessId String
+  url        String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+}
+
+model BusinessTagRelation {
+  id         String      @id @default(cuid())
+  businessId String
+  tag        BusinessTag
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, tag])
+  @@index([businessId])
+  @@index([tag])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  rating     Int // 1-5
+  text       String   @db.Text
+  tags       Json? // {serviceQuality: true, cleanliness: true, familyFriendly: true}
+  helpfulCount Int    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos   ReviewPhoto[]
+  flags    ReviewFlag[]
+
+  @@unique([businessId, userId]) // One review per user per business
+  @@index([businessId])
+  @@index([userId])
+  @@index([rating])
+}
+
+model ReviewPhoto {
+  id       String @id @default(cuid())
+  reviewId String
+  url      String
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+model ReviewFlag {
+  id        String   @id @default(cuid())
+  reviewId  String
+  reason    String
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  businessId String
+  consumerId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  consumer User      @relation(fields: [consumerId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([businessId, consumerId])
+  @@index([businessId])
+  @@index([consumerId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  text           String   @db.Text
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model VerificationRequest {
+  id          String             @id @default(cuid())
+  businessId  String
+  type        VerificationType
+  documentUrl String
+  status      VerificationStatus @default(PENDING)
+  reviewedBy  String?
+  reviewNote  String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([status])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  businessId  String
+  title       String
+  description String   @db.Text
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([startTime])
+}

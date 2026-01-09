@@ -63,6 +63,22 @@ class MockStorage {
     return this.data.messages;
   }
 
+  getBookings() {
+    return this.data.bookings;
+  }
+
+  getCommunityPosts() {
+    return this.data.communityPosts;
+  }
+
+  getPostComments() {
+    return this.data.postComments;
+  }
+
+  getBusinessViews() {
+    return this.data.businessViews;
+  }
+
   // Update the entire database
   setAll(data: MockDatabase) {
     this.data = data;
@@ -97,6 +113,26 @@ class MockStorage {
 
   setMessages(messages: typeof this.data.messages) {
     this.data.messages = messages;
+    this.persist();
+  }
+
+  setBookings(bookings: typeof this.data.bookings) {
+    this.data.bookings = bookings;
+    this.persist();
+  }
+
+  setCommunityPosts(posts: typeof this.data.communityPosts) {
+    this.data.communityPosts = posts;
+    this.persist();
+  }
+
+  setPostComments(comments: typeof this.data.postComments) {
+    this.data.postComments = comments;
+    this.persist();
+  }
+
+  setBusinessViews(views: typeof this.data.businessViews) {
+    this.data.businessViews = views;
     this.persist();
   }
 

@@ -62,6 +62,89 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum ConversationStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+  ARCHIVED
+}
+
+enum PostType {
+  ANNOUNCEMENT
+  EVENT
+  RESOURCE
+  QUESTION
+  DISCUSSION
+  PROMOTION
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  FLAGGED
+  HIDDEN
+  DELETED
+}
+
+enum CommentStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+enum ReportReason {
+  SPAM
+  FAKE
+  OFFENSIVE
+  IRRELEVANT
+  COMPETITOR
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum ViewSource {
+  MAP
+  SEARCH
+  PROFILE
+  RECOMMENDATION
+  COMMUNITY
+}
+
+enum PriceRange {
+  BUDGET
+  MODERATE
+  PREMIUM
+  LUXURY
+}
+
+enum ClaimStatus {
+  UNCLAIMED
+  CLAIMED
+  DISPUTED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -74,12 +157,21 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  businesses    Business[]
-  reviews       Review[]
-  sentMessages  Message[]  @relation("SentMessages")
-  conversations Conversation[]
-  accounts      Account[]
-  sessions      Session[]
+  businesses           Business[]
+  reviews              Review[]
+  sentMessages         Message[]             @relation("SentMessages")
+  conversations        Conversation[]        @relation("CustomerConversations")
+  accounts             Account[]
+  sessions             Session[]
+  customerBookings     Booking[]             @relation("CustomerBookings")
+  postLikes            PostLike[]
+  posts                CommunityPost[]
+  postComments         PostComment[]
+  commentLikes         CommentLike[]
+  reviewReports        ReviewReport[]        @relation("ReportedReviews")
+  resolvedReports      ReviewReport[]        @relation("ResolvedReports")
+  reviewHelpful        ReviewHelpful[]
+  businessViews        BusinessView[]
 
   @@index([email])
 }
@@ -128,6 +220,7 @@ model Business {
   name        String
   slug        String           @unique
   description String           @db.Text
+  shortDescription String?     @db.VarChar(200)
   category    BusinessCategory
   address     String
   city        String
@@ -142,6 +235,23 @@ model Business {
   services    String[] // Array of services offered
   status      BusinessStatus   @default(DRAFT)
 
+  // New fields for enhanced features
+  priceRange           PriceRange?
+  hoursOfOperation     Json?
+  verificationStatus   VerificationStatus @default(PENDING)
+  verifiedAt           DateTime?
+  verifiedBy           String?
+  viewCount            Int      @default(0)
+  claimStatus          ClaimStatus @default(UNCLAIMED)
+  coverImage           String?
+  logoImage            String?
+  scrapedFrom          String?
+  scrapedAt            DateTime?
+  confidenceScore      Int?
+  averageRating        Float?   @default(0)
+  totalReviews         Int      @default(0)
+  ratingBreakdown      Json?
+
   // Masjid specific fields
   prayerTimes Json? // {fajr: "05:30", dhuhr: "13:00", ...}
   jummahTime  String?
@@ -153,19 +263,26 @@ model Business {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  owner        User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  photos       BusinessPhoto[]
-  tags         BusinessTagRelation[]
-  reviews      Review[]
-  conversations Conversation[]
-  events       Event[]
-  verifications VerificationRequest[]
+  owner                User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  photos               BusinessPhoto[]
+  tags                 BusinessTagRelation[]
+  reviews              Review[]
+  conversations        Conversation[]
+  events               Event[]
+  verifications        VerificationRequest[]
+  bookings             Booking[]
+  posts                CommunityPost[]
+  businessViews        BusinessView[]
+  availability         BusinessAvailability[]
+  availabilityExceptions AvailabilityException[]
 
   @@index([ownerId])
   @@index([slug])
   @@index([category])
   @@index([latitude, longitude])
   @@index([status])
+  @@index([city, category])
+  @@index([status, verificationStatus])
 }
 
 model BusinessPhoto {
@@ -196,22 +313,43 @@ model Review {
   id         String   @id @default(cuid())
   businessId String
   userId     String
+  bookingId  String?
   rating     Int // 1-5
-  text       String   @db.Text
+  title      String?  @db.VarChar(100)
+  content    String   @db.Text
+  text       String?  @db.Text
+  photos     String[]
   tags       Json? // {serviceQuality: true, cleanliness: true, familyFriendly: true}
-  helpfulCount Int    @default(0)
+
+  isVerified   Boolean  @default(false)
+  verifiedAt   DateTime?
+  helpfulCount Int      @default(0)
+  reportCount  Int      @default(0)
+
+  ownerResponse String?   @db.Text
+  respondedAt   DateTime?
+
+  status      ReviewStatus @default(PUBLISHED)
+  flagReason  String?
+  moderatedBy String?
+  moderatedAt DateTime?
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos   ReviewPhoto[]
-  flags    ReviewFlag[]
+  business      Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking       Booking?         @relation(fields: [bookingId], references: [id])
+  reviewPhotos  ReviewPhoto[]
+  flags         ReviewFlag[]
+  helpfulVotes  ReviewHelpful[]
+  reports       ReviewReport[]
 
-  @@unique([businessId, userId]) // One review per user per business
+  @@unique([businessId, userId, bookingId])
   @@index([businessId])
   @@index([userId])
   @@index([rating])
+  @@index([businessId, status])
 }
 
 model ReviewPhoto {
@@ -235,35 +373,87 @@ model ReviewFlag {
   @@index([reviewId])
 }
 
+model ReviewHelpful {
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@index([reviewId])
+}
+
+model ReviewReport {
+  id          String       @id @default(cuid())
+  reviewId    String
+  reportedBy  String
+  reason      ReportReason
+  details     String?      @db.Text
+  status      ReportStatus @default(PENDING)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter User   @relation("ReportedReviews", fields: [reportedBy], references: [id])
+  resolver User?  @relation("ResolvedReports", fields: [resolvedBy], references: [id])
+
+  @@index([reviewId])
+  @@index([status])
+}
+
 model Conversation {
-  id         String   @id @default(cuid())
+  id         String             @id @default(cuid())
   businessId String
-  consumerId String
+  customerId String
+  subject    String?            @db.VarChar(200)
+  status     ConversationStatus @default(OPEN)
+  lastMessageAt DateTime        @default(now())
+
+  unreadByCustomer Int     @default(0)
+  unreadByBusiness Int     @default(0)
+
+  isBlocked     Boolean @default(false)
+  blockedBy     String?
+  blockedReason String?
+
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  consumer User      @relation(fields: [consumerId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer User     @relation("CustomerConversations", fields: [customerId], references: [id], onDelete: Cascade)
   messages Message[]
 
-  @@unique([businessId, consumerId])
+  @@unique([businessId, customerId])
   @@index([businessId])
-  @@index([consumerId])
+  @@index([customerId])
+  @@index([businessId, status, lastMessageAt])
 }
 
 model Message {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   conversationId String
   senderId       String
-  text           String   @db.Text
-  read           Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  content        String    @db.Text
+  text           String?   @db.Text
+  attachments    String[]
+  read           Boolean   @default(false)
+  readAt         DateTime?
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  isFlagged      Boolean   @default(false)
+  flagReason     String?
+  createdAt      DateTime  @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([conversationId, createdAt])
 }
 
 model VerificationRequest {
@@ -296,4 +486,187 @@ model Event {
 
   @@index([businessId])
   @@index([startTime])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  businessId      String
+  customerId      String
+  serviceType     String
+  appointmentDate DateTime
+  appointmentTime String
+  duration        Int
+  notes           String?       @db.Text
+
+  status          BookingStatus @default(PENDING)
+  statusHistory   Json[]
+
+  ownerNotes      String?       @db.Text
+  rejectionReason String?
+
+  reminderSent    Boolean       @default(false)
+  reminderSentAt  DateTime?
+
+  price           Float?
+  paymentStatus   PaymentStatus @default(NOT_REQUIRED)
+  paymentId       String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  confirmedAt     DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer User     @relation("CustomerBookings", fields: [customerId], references: [id])
+  review   Review?
+
+  @@index([businessId, appointmentDate])
+  @@index([customerId])
+  @@index([status])
+}
+
+model BusinessAvailability {
+  id           String  @id @default(cuid())
+  businessId   String
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  slotDuration Int
+  isAvailable  Boolean @default(true)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, dayOfWeek])
+  @@index([businessId])
+}
+
+model AvailabilityException {
+  id          String   @id @default(cuid())
+  businessId  String
+  date        DateTime @db.Date
+  isAvailable Boolean
+  startTime   String?
+  endTime     String?
+  reason      String?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@index([businessId])
+}
+
+model CommunityPost {
+  id          String     @id @default(cuid())
+  authorId    String
+  businessId  String?
+  title       String     @db.VarChar(200)
+  content     String     @db.Text
+  postType    PostType
+  media       String[]
+  tags        String[]
+
+  viewCount    Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+  shareCount   Int @default(0)
+
+  status      PostStatus @default(PUBLISHED)
+  isPinned    Boolean    @default(false)
+  flagCount   Int        @default(0)
+
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  business Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  likes    PostLike[]
+  comments PostComment[]
+  reports  PostReport[]
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+  @@index([businessId])
+  @@index([postType])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+model PostComment {
+  id        String        @id @default(cuid())
+  postId    String
+  userId    String
+  parentId  String?
+  content   String        @db.Text
+  likeCount Int           @default(0)
+  status    CommentStatus @default(PUBLISHED)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  post    CommunityPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  PostComment?   @relation("CommentReplies", fields: [parentId], references: [id])
+  replies PostComment[]  @relation("CommentReplies")
+  likes   CommentLike[]
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+}
+
+model PostReport {
+  id         String   @id @default(cuid())
+  postId     String
+  reportedBy String
+  reason     String
+  details    String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime @default(now())
+
+  post     CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reporter User          @relation(fields: [reportedBy], references: [id])
+
+  @@index([postId])
+  @@index([status])
+}
+
+model BusinessView {
+  id         String     @id @default(cuid())
+  businessId String
+  userId     String?
+  source     ViewSource
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime   @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id])
+
+  @@index([businessId, source])
+  @@index([createdAt])
 }

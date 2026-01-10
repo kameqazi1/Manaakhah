@@ -5,11 +5,22 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+// @ts-ignore - markercluster doesn't have proper types
 import "leaflet.markercluster";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CATEGORIES, BUSINESS_TAGS } from "./BusinessMap";
+
+// Extend Leaflet namespace to include markerClusterGroup
+declare module "leaflet" {
+  function markerClusterGroup(options?: any): MarkerClusterGroup;
+
+  interface MarkerClusterGroup extends L.LayerGroup {
+    clearLayers(): this;
+    addLayer(layer: L.Layer): this;
+  }
+}
 
 interface Business {
   id: string;
@@ -46,6 +57,23 @@ export default function LeafletMap({
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
 
   useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    // Dynamically import markercluster to ensure it loads properly
+    import("leaflet.markercluster").then(() => {
+      initializeMap();
+    });
+
+    // Cleanup function
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [userLat, userLng, radius]);
+
+  const initializeMap = () => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     // Initialize map
@@ -92,7 +120,13 @@ export default function LeafletMap({
     }).addTo(map);
 
     // Initialize marker cluster group
-    const markers = L.markerClusterGroup({
+    // Check if markerClusterGroup is available (loaded by the plugin)
+    if (typeof (L as any).markerClusterGroup !== "function") {
+      console.error("MarkerClusterGroup is not available");
+      return;
+    }
+
+    const markers = (L as any).markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false,
@@ -161,12 +195,7 @@ export default function LeafletMap({
       }
     `;
     document.head.appendChild(style);
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [userLat, userLng, radius]);
+  };
 
   // Update markers when businesses change
   useEffect(() => {

@@ -5,8 +5,6 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-// @ts-ignore - markercluster doesn't have proper types
-import "leaflet.markercluster";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -59,10 +57,23 @@ export default function LeafletMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Dynamically import markercluster to ensure it loads properly
-    import("leaflet.markercluster").then(() => {
-      initializeMap();
-    });
+    // Dynamically import and load markercluster plugin
+    const loadMapWithCluster = async () => {
+      try {
+        // Import the markercluster library
+        await import("leaflet.markercluster");
+
+        // Small delay to ensure plugin is registered with Leaflet
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Now initialize the map
+        initializeMap();
+      } catch (error) {
+        console.error("Failed to load markercluster:", error);
+      }
+    };
+
+    loadMapWithCluster();
 
     // Cleanup function
     return () => {
@@ -122,10 +133,12 @@ export default function LeafletMap({
     // Initialize marker cluster group
     // Check if markerClusterGroup is available (loaded by the plugin)
     if (typeof (L as any).markerClusterGroup !== "function") {
-      console.error("MarkerClusterGroup is not available");
+      console.error("MarkerClusterGroup is not available. Leaflet object:", L);
+      console.error("Available L properties:", Object.keys(L));
       return;
     }
 
+    console.log("✓ MarkerClusterGroup is available, creating cluster...");
     const markers = (L as any).markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,

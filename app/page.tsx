@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BusinessMap } from "@/components/map/BusinessMap";
 
 const categories = [
   { name: "Halal Food", icon: "🍽️", count: "0" },
@@ -38,8 +41,21 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Map Section */}
+      <section className="py-16 px-4 bg-white">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Businesses Near You
+          </h2>
+          <p className="text-center text-gray-600 mb-8">
+            Explore Muslim-owned businesses in Fremont and surrounding areas
+          </p>
+          <BusinessMap />
+        </div>
+      </section>
+
       {/* Categories Section */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 bg-gray-50">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Browse Categories</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -59,7 +75,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-50 py-16 px-4">
+      <section className="bg-white py-16 px-4">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12">Why Choose Manakhaah?</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -92,7 +108,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 bg-gray-50">
         <div className="container mx-auto text-center max-w-3xl">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-gray-600 mb-8">

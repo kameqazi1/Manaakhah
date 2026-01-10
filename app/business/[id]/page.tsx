@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BUSINESS_TAGS } from "@/lib/constants";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
 
 interface Business {
   id: string;
@@ -175,54 +176,10 @@ export default function BusinessDetailPage() {
             )}
 
             {/* Reviews */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Reviews ({business.reviewCount})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {business.reviews.length === 0 ? (
-                  <p className="text-gray-600 text-center py-4">
-                    No reviews yet. Be the first to review!
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {business.reviews.slice(0, 5).map((review) => (
-                      <div key={review.id} className="border-b pb-4 last:border-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-semibold">{review.user.name}</span>
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <span
-                                key={i}
-                                className={
-                                  i < review.rating
-                                    ? "text-yellow-500"
-                                    : "text-gray-300"
-                                }
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-700">{review.text}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(review.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <Button variant="outline" className="w-full">
-                    Write a Review
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ReviewSection
+              businessId={business.id}
+              businessOwnerId={business.owner.id}
+            />
           </div>
 
           {/* Sidebar */}

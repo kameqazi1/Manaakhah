@@ -198,12 +198,12 @@ export default function CommunityPage() {
           <div key={comment.id} className="mb-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
-                {comment.author.name.charAt(0).toUpperCase()}
+                {comment.author?.name?.charAt(0).toUpperCase() || "?"}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-semibold text-sm">
-                    {comment.author.name}
+                    {comment.author?.name || "Anonymous"}
                   </span>
                   <span className="text-xs text-gray-500">
                     {new Date(comment.createdAt).toLocaleDateString()}
@@ -305,9 +305,9 @@ export default function CommunityPage() {
                       <div className="flex items-center gap-3 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                            {post.author.name.charAt(0).toUpperCase()}
+                            {post.author?.name?.charAt(0).toUpperCase() || "?"}
                           </div>
-                          <span>{post.author.name}</span>
+                          <span>{post.author?.name || "Anonymous"}</span>
                         </div>
 
                         {post.business && (

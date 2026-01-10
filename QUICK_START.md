@@ -1,163 +1,119 @@
-# Quick Start - Run Manakhaah in Mock Mode (No Database!)
+# Manakhaah MVP - Quick Start Guide
 
-## ⚡ 2-Minute Setup
+## 🚀 Get Started in 3 Minutes
 
-### Step 1: Start the App
+### 1. Start the Server
+
 ```bash
 npm run dev
 ```
 
-### Step 2: Open Browser
-Visit: http://localhost:3000
-
-### Step 3: That's It!
-You're done! The app is running with mock data (no database needed).
+Visit: **http://localhost:3000**
 
 ---
 
-## 🎭 Using the App
+## 🎭 Test User Accounts
 
-### Yellow Badge (Bottom-Right)
-You'll see: **🎭 Mock Mode (CONSUMER)**
+All accounts use password: `password123`
 
-Click it to:
-- Switch between users instantly
-- See all available test accounts
-- Reset data
-
-### Pre-loaded Test Accounts
-
-1. **consumer@test.com** / password123
-   - Role: Consumer
-   - Can: Browse, search, review
-
-2. **owner@test.com** / password123
-   - Role: Business Owner
-   - Can: Create listings, manage businesses
-
-3. **admin@test.com** / password123
-   - Role: Admin
-   - Can: Review scraped businesses, approve/reject
+| Email | Role | Use For |
+|-------|------|---------|
+| `consumer@example.com` | Consumer | Browsing, reviews, bookings |
+| `business@example.com` | Business Owner | Managing listings, responding to reviews |
+| `admin@example.com` | Admin | Content moderation, admin features |
 
 ---
 
-## 📍 Key Pages
+## ✅ Quick Feature Tour (5 Minutes)
 
-### Homepage
-http://localhost:3000
-- Browse categories
-- See featured businesses
+### 1️⃣ **Landing Page & Map** (30 seconds)
+- Open http://localhost:3000
+- Scroll to "Businesses Near You" section
+- Click business markers on the map
+- Click "View Details" to visit a business
 
-### Search
-http://localhost:3000/search
-- Search businesses
-- Filter by category and tags
+### 2️⃣ **Search Businesses** (30 seconds)
+- Click "Find Services" in header
+- Search for "halal" or "masjid"
+- Try filters (category, tags)
+- Click on a business card
 
-### Admin Review Queue
-http://localhost:3000/admin/review-queue
-- Switch to Admin (role switcher)
-- Review scraped businesses
-- Approve/reject/flag listings
+### 3️⃣ **Reviews** (1 minute)
 
-### Dashboard
-http://localhost:3000/dashboard
-- Switch to Business Owner
-- Create new listing
-- Manage your businesses
+**As Consumer:**
+1. Click "Sign In" → Login with `consumer@example.com`
+2. Visit any business page
+3. Scroll to Reviews section
+4. Click "Write a Review"
+5. Rate 5 stars, write: "Excellent service, highly recommend!"
+6. Submit and see it appear instantly
 
----
+**As Business Owner:**
+1. Use role switcher (bottom-right) → Select "Business Owner Test"
+2. Visit your business page
+3. See owner response options on reviews
 
-## ✅ Testing Flows
+### 4️⃣ **Bookings** (1 minute)
 
-### Test 1: Browse as Consumer
-1. Click role switcher → Select "Consumer"
-2. Go to /search
-3. Filter by "Halal Food"
-4. Click on "Al-Noor Halal Market"
-5. See full details, reviews
+**As Consumer:**
+1. Login as consumer
+2. Navigate to "Bookings" in header
+3. View "My Appointments" tab
+4. See upcoming and past bookings
+5. Try canceling a pending booking
 
-### Test 2: Create Business
-1. Click role switcher → Select "Business Owner"
-2. Go to /dashboard
-3. Click "Create New Listing"
-4. Fill form:
-   - Name: My Test Restaurant
-   - Category: Restaurant
-   - Description: Great halal food
-   - Address: 123 Main St
-   - City: Fremont
-   - Zip: 94536
-   - Phone: (510) 555-1234
-   - Services: Dine-in, Takeout
-   - Tags: Muslim-owned, Halal verified
-5. Submit
-6. See it in dashboard (status: Pending Review)
+**As Business Owner:**
+1. Switch to business owner (role switcher)
+2. Click "Business Bookings" tab
+3. Find a PENDING booking
+4. Click "Confirm" to approve it
+5. See status change to CONFIRMED
 
-### Test 3: Approve Scraped Business
-1. Click role switcher → Select "Admin"
-2. Go to /admin/review-queue
-3. Click "Zabiha Halal Restaurant"
-4. Review:
-   - Confidence: 95%
-   - Signals: zabiha, halal, pakistani
-   - Source: Google Maps
-5. Click "✓ Approve & Publish"
-6. Go to /search → See it published!
+### 5️⃣ **Messages** (1 minute)
+1. Login as consumer
+2. Click "Messages" in header
+3. Select a conversation from left panel
+4. Type a message: "Hello! Do you offer delivery?"
+5. Click Send
+6. Message appears instantly in thread
 
----
+### 6️⃣ **Community Feed** (1 minute)
+1. Click "Community" in header
+2. Browse posts (announcements, events, etc.)
+3. Click 👍 to like a post
+4. Click 💬 to expand comments
+5. Type a comment: "Great information, thanks!"
+6. Click "Post" to submit
 
-## 🔧 Troubleshooting
-
-### Issue: Nothing showing
-**Fix**: Clear localStorage
-```javascript
-// In browser console
-localStorage.clear();
-location.reload();
-```
-
-### Issue: Role switcher not showing
-**Fix**: Check .env.local
-```
-NEXT_PUBLIC_USE_MOCK_DATA=true
-```
-Then restart: `npm run dev`
-
-### Issue: Can't create business
-**Fix**: Make sure you're logged in as Business Owner or Admin
-- Click role switcher
-- Select "owner@test.com"
+### 7️⃣ **Business Dashboard** (30 seconds)
+1. Switch to business owner
+2. Visit Dashboard (header or /dashboard)
+3. View your business listings
+4. See stats and reviews
 
 ---
 
-## 📊 Mock Data Location
+## 📊 What's Working
 
-All data is stored in browser localStorage:
-- Key: `manakhaah-mock-data`
-- Key: `manakhaah-mock-session`
-
-**View in console:**
-```javascript
-JSON.parse(localStorage.getItem('manakhaah-mock-data'))
-```
-
-**Reset data:**
-Click role switcher → "Reset All Data"
+✅ **All 7 Core Features:**
+1. Business discovery with interactive map
+2. Search with filters and sorting
+3. Reviews with ratings, responses, helpful votes
+4. Booking system with full lifecycle
+5. Real-time messaging
+6. Community feed with posts, likes, comments
+7. Location-based search
 
 ---
 
-## 🚀 Next Steps
+## 🚀 Next: Full Testing
 
-1. ✅ Test all flows above
-2. ✅ Create your own test businesses
-3. ✅ Review scraped queue
-4. ✅ Approve/reject businesses
+For comprehensive testing of all features, see:
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Complete testing documentation
 
-For more details, see:
-- **LOCAL_DEV_COMPLETE_GUIDE.md** - Full guide
-- **MOCK_MODE_GUIDE.md** - Mock mode details
-- **lib/scraper/SCRAPING_GUIDE.md** - Web scraping guide
+For implementation details, see:
+- **[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)** - Technical architecture
 
 ---
 
-**Enjoy building without any setup!** 🎉
+**Happy Testing!** 🧪

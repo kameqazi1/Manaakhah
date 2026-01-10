@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BusinessMap } from "@/components/map/BusinessMap";
+import { PrayerTimeWidget } from "@/components/prayer-times/PrayerTimeWidget";
 
 const categories = [
   { name: "Halal Food", icon: "🍽️", count: "0" },
@@ -44,13 +45,23 @@ export default function Home() {
       {/* Map Section */}
       <section className="py-16 px-4 bg-white">
         <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Businesses Near You
-          </h2>
-          <p className="text-center text-gray-600 mb-8">
-            Explore Muslim-owned businesses in Fremont and surrounding areas
-          </p>
-          <BusinessMap />
+          <div className="grid lg:grid-cols-4 gap-6">
+            {/* Prayer Times Sidebar */}
+            <div className="lg:col-span-1">
+              <PrayerTimeWidget />
+            </div>
+
+            {/* Map */}
+            <div className="lg:col-span-3">
+              <h2 className="text-3xl font-bold mb-4">
+                Businesses Near You
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Explore Muslim-owned businesses in Fremont and surrounding areas
+              </p>
+              <BusinessMap />
+            </div>
+          </div>
         </div>
       </section>
 

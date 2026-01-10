@@ -178,6 +178,7 @@ model User {
   resolvedReports      ReviewReport[]        @relation("ResolvedReports")
   reviewHelpful        ReviewHelpful[]
   businessViews        BusinessView[]
+  notifications        Notification[]
 
   @@index([email])
 }
@@ -277,12 +278,13 @@ model Business {
   reviews              Review[]
   conversations        Conversation[]
   events               Event[]
-  verifications        VerificationRequest[]
   bookings             Booking[]
   posts                CommunityPost[]
   businessViews        BusinessView[]
   availability         BusinessAvailability[]
   availabilityExceptions AvailabilityException[]
+  deals                Deal[]
+  verificationRequests VerificationRequest[]
 
   @@index([ownerId])
   @@index([slug])
@@ -701,4 +703,68 @@ model ScrapedBusiness {
 
   @@index([claimStatus])
   @@index([scrapedAt])
+}
+
+enum NotificationType {
+  BOOKING_REQUEST
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  NEW_MESSAGE
+  NEW_REVIEW
+  REVIEW_RESPONSE
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  DEAL_EXPIRING
+  SYSTEM_ANNOUNCEMENT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  link      String?
+  read      Boolean          @default(false)
+  data      Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+enum DealType {
+  PERCENTAGE_OFF
+  FIXED_AMOUNT_OFF
+  BUY_ONE_GET_ONE
+  SPECIAL_PRICE
+  FREE_ITEM
+}
+
+model Deal {
+  id              String    @id @default(cuid())
+  businessId      String
+  title           String
+  description     String    @db.Text
+  dealType        DealType
+  value           Float
+  originalPrice   Float?
+  specialPrice    Float?
+  conditions      String?   @db.Text
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean   @default(true)
+  maxRedemptions  Int?
+  currentRedemptions Int    @default(0)
+  code            String?
+  imageUrl        String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, isActive])
+  @@index([endDate])
 }

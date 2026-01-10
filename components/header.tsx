@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMockSession, useMockSignOut } from "@/components/mock-session-provider";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function Header() {
   const { data: session } = useMockSession();
@@ -44,7 +45,8 @@ export function Header() {
           )}
         </nav>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          {session && <NotificationBell />}
           {session ? (
             <>
               <Link href="/dashboard">

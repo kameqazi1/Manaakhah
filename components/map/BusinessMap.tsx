@@ -81,13 +81,17 @@ export function BusinessMap({ userLat = 37.5485, userLng = -121.9886, radius = 1
 
   const fetchNearbyBusinesses = async () => {
     try {
+      console.log(`Fetching businesses near ${userLat}, ${userLng} within ${radius} miles`);
       const response = await fetch(
         `/api/businesses?lat=${userLat}&lng=${userLng}&radius=${radius}`
       );
 
       if (response.ok) {
         const data = await response.json();
+        console.log(`Received ${data.length} businesses from API:`, data);
         setBusinesses(data || []);
+      } else {
+        console.error(`API responded with status ${response.status}`);
       }
     } catch (error) {
       console.error("Error fetching businesses:", error);

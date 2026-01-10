@@ -532,7 +532,8 @@ export default function LeafletMap({
         <CardContent className="p-0">
           <div
             ref={mapContainerRef}
-            className="w-full h-[600px] rounded-lg overflow-hidden"
+            className="w-full h-[600px] rounded-lg overflow-hidden bg-gray-100"
+            style={{ minHeight: "600px" }}
           />
         </CardContent>
       </Card>

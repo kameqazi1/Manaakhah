@@ -4,7 +4,7 @@ import { db, isMockMode } from "@/lib/db";
 // PUT /api/admin/scraped-businesses/:id - Update scraped business status
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     let userId: string | null = null;
@@ -23,7 +23,8 @@ export async function PUT(
     const body = await req.json();
     const { claimStatus } = body;
 
-    const businessId = params.id;
+    const resolvedParams = await params;
+    const businessId = resolvedParams.id;
 
     // Update status
     const updateData: any = {

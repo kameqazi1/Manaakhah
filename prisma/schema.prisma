@@ -145,6 +145,12 @@ enum ClaimStatus {
   DISPUTED
 }
 
+enum ScrapedBusinessClaimStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -251,6 +257,8 @@ model Business {
   averageRating        Float?   @default(0)
   totalReviews         Int      @default(0)
   ratingBreakdown      Json?
+  isScraped            Boolean  @default(false)
+  scrapedBusinessId    String?  @unique
 
   // Masjid specific fields
   prayerTimes Json? // {fajr: "05:30", dhuhr: "13:00", ...}
@@ -669,4 +677,28 @@ model BusinessView {
 
   @@index([businessId, source])
   @@index([createdAt])
+}
+
+model ScrapedBusiness {
+  id          String                     @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  latitude    Float?
+  longitude   Float?
+  phone       String?
+  email       String?
+  website     String?
+  category    BusinessCategory
+  description String?                    @db.Text
+  sourceUrl   String
+  scrapedAt   DateTime                   @default(now())
+  claimStatus ScrapedBusinessClaimStatus @default(PENDING_REVIEW)
+  reviewedAt  DateTime?
+  metadata    Json? // Stores scraper metadata like confidence, source, etc.
+
+  @@index([claimStatus])
+  @@index([scrapedAt])
 }

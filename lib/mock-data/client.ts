@@ -181,6 +181,8 @@ export const mockDb = {
         averageRating: data.averageRating || 0,
         totalReviews: data.totalReviews || 0,
         ratingBreakdown: data.ratingBreakdown || null,
+        isScraped: data.isScraped || false,
+        scrapedBusinessId: data.scrapedBusinessId || null,
         prayerTimes: data.prayerTimes || null,
         jummahTime: data.jummahTime || null,
         aidServices: data.aidServices || [],
@@ -554,10 +556,52 @@ export const mockDb = {
   },
 
   scrapedBusiness: {
-    findMany: ({ where }: { where?: any }) => {
+    findMany: ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
       let scraped = mockStorage.getScrapedBusinesses();
-      if (where?.status) scraped = scraped.filter((s) => s.status === where.status);
+
+      // Filter by claimStatus
+      if (where?.claimStatus) {
+        scraped = scraped.filter((s) => s.claimStatus === where.claimStatus);
+      }
+
+      // Filter by name and address (for duplicates)
+      if (where?.name && where?.address) {
+        scraped = scraped.filter((s) => s.name === where.name && s.address === where.address);
+      }
+
+      // Sort
+      if (orderBy?.scrapedAt === "desc") {
+        scraped = scraped.sort((a, b) => new Date(b.scrapedAt).getTime() - new Date(a.scrapedAt).getTime());
+      }
+
       return scraped;
+    },
+
+    create: ({ data }: { data: Partial<MockScrapedBusiness> }) => {
+      const scraped = mockStorage.getScrapedBusinesses();
+      const newScraped: MockScrapedBusiness = {
+        id: mockStorage.generateId("scraped"),
+        name: data.name!,
+        category: data.category!,
+        address: data.address!,
+        city: data.city!,
+        state: data.state!,
+        zipCode: data.zipCode!,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        website: data.website || null,
+        description: data.description || null,
+        sourceUrl: data.sourceUrl!,
+        scrapedAt: data.scrapedAt || new Date(),
+        claimStatus: data.claimStatus || "PENDING_REVIEW",
+        reviewedAt: data.reviewedAt || null,
+        metadata: data.metadata || {},
+      };
+      scraped.push(newScraped);
+      mockStorage.setScrapedBusinesses(scraped);
+      return newScraped;
     },
 
     update: ({ where, data }: { where: { id: string }; data: Partial<MockScrapedBusiness> }) => {

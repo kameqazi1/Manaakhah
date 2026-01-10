@@ -28,7 +28,7 @@ export type BusinessTag =
   | "WHEELCHAIR_ACCESSIBLE"
   | "PRAYER_SPACE";
 
-export type ScrapedBusinessStatus = "PENDING" | "APPROVED" | "REJECTED" | "FLAGGED";
+export type ScrapedBusinessClaimStatus = "PENDING_REVIEW" | "APPROVED" | "REJECTED";
 export type ReviewStatus = "PUBLISHED" | "PENDING" | "FLAGGED" | "HIDDEN" | "DELETED";
 export type BookingStatus = "PENDING" | "CONFIRMED" | "REJECTED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 export type PaymentStatus = "NOT_REQUIRED" | "PENDING" | "PAID" | "REFUNDED";
@@ -92,6 +92,8 @@ export interface MockBusiness {
   averageRating: number;
   totalReviews: number;
   ratingBreakdown?: any;
+  isScraped?: boolean;
+  scrapedBusinessId?: string | null;
 
   prayerTimes: any;
   jummahTime: string | null;
@@ -139,24 +141,18 @@ export interface MockScrapedBusiness {
   city: string;
   state: string;
   zipCode: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   phone: string | null;
   email: string | null;
   website: string | null;
   category: BusinessCategory;
-  description: string;
-  services: string[];
-  suggestedTags: BusinessTag[];
-  source: string;
+  description: string | null;
   sourceUrl: string;
-  confidence: number;
-  signals: string[];
-  status: ScrapedBusinessStatus;
-  reviewedBy: string | null;
-  reviewNote: string | null;
   scrapedAt: Date;
+  claimStatus: ScrapedBusinessClaimStatus;
   reviewedAt: Date | null;
+  metadata: any; // Stores source, confidence, signals, etc.
 }
 
 export interface MockConversation {

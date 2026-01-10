@@ -42,6 +42,26 @@ const createBusinessSchema = z.object({
   externalUrl: z.string().url().optional().or(z.literal("")),
 });
 
+// Helper function to calculate distance between two points using Haversine formula
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 // GET /api/businesses - List all businesses with filters
 export async function GET(req: Request) {
   try {
@@ -50,6 +70,11 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
     const tags = searchParams.get("tags")?.split(",") || [];
     const status = searchParams.get("status") || "PUBLISHED";
+
+    // Location-based filtering
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const radius = searchParams.get("radius");
 
     const where: any = {
       status: status as any,
@@ -100,23 +125,53 @@ export async function GET(req: Request) {
       orderBy: {
         createdAt: "desc",
       },
-      take: 50,
+      take: 100,
     });
 
-    // Calculate average rating for each business
-    const businessesWithRating = businesses.map((business) => {
+    // Calculate average rating and distance for each business
+    let businessesWithRating = businesses.map((business) => {
       const avgRating =
         business.reviews.length > 0
           ? business.reviews.reduce((sum, r) => sum + r.rating, 0) /
             business.reviews.length
           : 0;
 
-      return {
+      const businessData: any = {
         ...business,
         averageRating: avgRating,
         reviewCount: business.reviews.length,
       };
+
+      // Add distance if location params provided
+      if (lat && lng && business.latitude && business.longitude) {
+        const distance = calculateDistance(
+          parseFloat(lat),
+          parseFloat(lng),
+          business.latitude,
+          business.longitude
+        );
+        businessData.distance = distance;
+      }
+
+      return businessData;
     });
+
+    // Filter by radius if provided
+    if (lat && lng && radius) {
+      const maxRadius = parseFloat(radius);
+      businessesWithRating = businessesWithRating.filter(
+        (b) => !b.distance || b.distance <= maxRadius
+      );
+    }
+
+    // Sort by distance if location provided
+    if (lat && lng) {
+      businessesWithRating.sort((a, b) => {
+        const distA = a.distance || Infinity;
+        const distB = b.distance || Infinity;
+        return distA - distB;
+      });
+    }
 
     return NextResponse.json(businessesWithRating);
   } catch (error) {

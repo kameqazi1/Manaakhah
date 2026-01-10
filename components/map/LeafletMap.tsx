@@ -248,6 +248,8 @@ export default function LeafletMap({
   useEffect(() => {
     if (!markersLayerRef.current) return;
 
+    console.log(`Rendering ${businesses.length} businesses on map`, businesses);
+
     // Clear existing markers
     markersLayerRef.current.clearLayers();
 

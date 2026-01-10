@@ -181,6 +181,39 @@ export default function LeafletMap({
           opacity: 0.3;
         }
       }
+      @keyframes markerPulse {
+        0%, 100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.5;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.8);
+          opacity: 0;
+        }
+      }
+      .business-marker {
+        cursor: pointer !important;
+        z-index: 1000 !important;
+        transition: z-index 0s;
+      }
+      .business-marker:hover {
+        z-index: 10000 !important;
+      }
+      .marker-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .marker-inner {
+        cursor: pointer;
+        user-select: none;
+      }
+      .marker-ring {
+        pointer-events: none;
+      }
+      .marker-ring.active {
+        animation: markerPulse 2s ease-out infinite;
+      }
       .leaflet-popup-content-wrapper {
         border-radius: 12px;
         padding: 0;
@@ -192,6 +225,20 @@ export default function LeafletMap({
       }
       .leaflet-popup-tip {
         background: white;
+      }
+      .leaflet-tooltip {
+        background: rgba(17, 24, 39, 0.95);
+        border: none;
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      }
+      .leaflet-tooltip-top:before,
+      .leaflet-tooltip-bottom:before {
+        border-top-color: rgba(17, 24, 39, 0.95);
       }
     `;
     document.head.appendChild(style);
@@ -214,28 +261,50 @@ export default function LeafletMap({
       const icon = L.divIcon({
         className: "business-marker",
         html: `
-          <div style="position: relative; cursor: pointer;">
+          <div style="position: relative; cursor: pointer;" class="marker-container">
             <div style="
-              width: 40px;
-              height: 40px;
+              width: 44px;
+              height: 44px;
               background: ${categoryColor};
-              border: 3px solid white;
+              border: 4px solid white;
               border-radius: 50%;
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 20px;
-              box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-              transition: transform 0.2s;
+              font-size: 22px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+              transition: all 0.3s ease;
+              position: relative;
+              z-index: 2;
             " class="marker-inner">${categoryIcon}</div>
+            <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 44px;
+              height: 44px;
+              background: ${categoryColor};
+              border-radius: 50%;
+              opacity: 0.3;
+              z-index: 1;
+            " class="marker-ring"></div>
           </div>
         `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        popupAnchor: [0, -20],
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
+        popupAnchor: [0, -22],
       });
 
       const marker = L.marker([business.latitude, business.longitude], { icon });
+
+      // Add tooltip with business name (shows on hover)
+      marker.bindTooltip(business.name, {
+        permanent: false,
+        direction: "top",
+        offset: [0, -25],
+        className: "business-tooltip",
+      });
 
       // Create rich popup content
       const popupContent = createPopupContent(business);
@@ -247,41 +316,79 @@ export default function LeafletMap({
 
       // Add hover effect
       marker.on("mouseover", function () {
-        this.getElement()?.querySelector(".marker-inner")?.setAttribute(
+        const markerEl = this.getElement();
+        markerEl?.querySelector(".marker-inner")?.setAttribute(
           "style",
           `
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             background: ${categoryColor};
-            border: 3px solid white;
+            border: 4px solid white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-            transform: scale(1.2);
+            font-size: 22px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+            transform: scale(1.25);
+          `
+        );
+        markerEl?.querySelector(".marker-ring")?.setAttribute(
+          "style",
+          `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1.5);
+            width: 44px;
+            height: 44px;
+            background: ${categoryColor};
+            border-radius: 50%;
+            opacity: 0.4;
+            z-index: 1;
+            transition: all 0.3s ease;
           `
         );
       });
 
       marker.on("mouseout", function () {
-        this.getElement()?.querySelector(".marker-inner")?.setAttribute(
+        const markerEl = this.getElement();
+        markerEl?.querySelector(".marker-inner")?.setAttribute(
           "style",
           `
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             background: ${categoryColor};
-            border: 3px solid white;
+            border: 4px solid white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
+            font-size: 22px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
             transform: scale(1);
+          `
+        );
+        markerEl?.querySelector(".marker-ring")?.setAttribute(
+          "style",
+          `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 44px;
+            height: 44px;
+            background: ${categoryColor};
+            border-radius: 50%;
+            opacity: 0.3;
+            z-index: 1;
+            transition: all 0.3s ease;
           `
         );
       });

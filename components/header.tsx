@@ -19,12 +19,19 @@ export function Header() {
           <Link href="/search" className="text-sm font-medium hover:text-primary">
             Find Services
           </Link>
-          <Link href="/masjids" className="text-sm font-medium hover:text-primary">
-            Masjids
+          <Link href="/community" className="text-sm font-medium hover:text-primary">
+            Community
           </Link>
-          <Link href="/community-aid" className="text-sm font-medium hover:text-primary">
-            Community Aid
-          </Link>
+          {session && (
+            <>
+              <Link href="/bookings" className="text-sm font-medium hover:text-primary">
+                Bookings
+              </Link>
+              <Link href="/messages" className="text-sm font-medium hover:text-primary">
+                Messages
+              </Link>
+            </>
+          )}
           {session?.user.role === "BUSINESS_OWNER" && (
             <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
               My Listings

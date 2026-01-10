@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useMockSession } from "@/lib/mock-session";
+import { useMockSession } from "@/components/mock-session-provider";
 
 interface WriteReviewModalProps {
   businessId: string;

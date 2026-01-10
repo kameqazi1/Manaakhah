@@ -114,6 +114,51 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign in"}
             </Button>
 
+            {USE_MOCK_DATA && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <p className="text-xs font-semibold text-blue-900 mb-2">Demo Accounts:</p>
+                <div className="space-y-2 text-xs text-blue-800">
+                  <div className="flex items-center justify-between">
+                    <span>Consumer:</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs"
+                      onClick={() => setFormData({ email: "consumer@test.com", password: "password123" })}
+                    >
+                      consumer@test.com
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Business Owner:</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs"
+                      onClick={() => setFormData({ email: "owner@test.com", password: "password123" })}
+                    >
+                      owner@test.com
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Admin:</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs"
+                      onClick={() => setFormData({ email: "admin@test.com", password: "password123" })}
+                    >
+                      admin@test.com
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">Password: password123</p>
+                </div>
+              </div>
+            )}
+
             <p className="text-center text-sm text-gray-600">
               Don't have an account?{" "}
               <Link href="/register" className="text-primary font-medium hover:underline">

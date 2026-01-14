@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useMockSession } from "@/components/mock-session-provider";
 import { WriteReviewModal } from "./WriteReviewModal";
 
@@ -52,6 +53,15 @@ export function ReviewSection({ businessId, businessOwnerId }: ReviewSectionProp
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
   const [sortBy, setSortBy] = useState("newest");
+
+  // Owner response state
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState("");
+  const [submittingResponse, setSubmittingResponse] = useState(false);
+
+  // Report review state
+  const [reportingReview, setReportingReview] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState("");
 
   useEffect(() => {
     fetchReviews();
@@ -109,6 +119,92 @@ export function ReviewSection({ businessId, businessOwnerId }: ReviewSectionProp
     } catch (error) {
       console.error("Error marking review as helpful:", error);
     }
+  };
+
+  const handleSubmitResponse = async (reviewId: string) => {
+    if (!responseText.trim() || !session?.user?.id) return;
+
+    setSubmittingResponse(true);
+    try {
+      const response = await fetch(`/api/reviews/${reviewId}/respond`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": session.user.id,
+          "x-user-role": session.user.role,
+        },
+        body: JSON.stringify({ response: responseText }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setReviews(reviews.map(r =>
+          r.id === reviewId
+            ? { ...r, ownerResponse: responseText, respondedAt: new Date() }
+            : r
+        ));
+        setRespondingTo(null);
+        setResponseText("");
+      } else {
+        // If API fails, save to localStorage as fallback
+        const savedResponses = localStorage.getItem("ownerResponses") || "{}";
+        const responses = JSON.parse(savedResponses);
+        responses[reviewId] = {
+          response: responseText,
+          respondedAt: new Date().toISOString(),
+          respondedBy: session.user.name,
+        };
+        localStorage.setItem("ownerResponses", JSON.stringify(responses));
+
+        setReviews(reviews.map(r =>
+          r.id === reviewId
+            ? { ...r, ownerResponse: responseText, respondedAt: new Date() }
+            : r
+        ));
+        setRespondingTo(null);
+        setResponseText("");
+      }
+    } catch (error) {
+      console.error("Error submitting response:", error);
+      // Save to localStorage as fallback
+      const savedResponses = localStorage.getItem("ownerResponses") || "{}";
+      const responses = JSON.parse(savedResponses);
+      responses[reviewId] = {
+        response: responseText,
+        respondedAt: new Date().toISOString(),
+        respondedBy: session?.user?.name,
+      };
+      localStorage.setItem("ownerResponses", JSON.stringify(responses));
+
+      setReviews(reviews.map(r =>
+        r.id === reviewId
+          ? { ...r, ownerResponse: responseText, respondedAt: new Date() }
+          : r
+      ));
+      setRespondingTo(null);
+      setResponseText("");
+    } finally {
+      setSubmittingResponse(false);
+    }
+  };
+
+  const handleReportReview = (reviewId: string) => {
+    if (!reportReason) return;
+
+    // Save report to localStorage
+    const savedReports = localStorage.getItem("reviewReports") || "[]";
+    const reports = JSON.parse(savedReports);
+    reports.push({
+      reviewId,
+      reason: reportReason,
+      reportedBy: session?.user?.id,
+      reportedAt: new Date().toISOString(),
+    });
+    localStorage.setItem("reviewReports", JSON.stringify(reports));
+
+    alert("Thank you for your report. We will review it shortly.");
+    setReportingReview(null);
+    setReportReason("");
   };
 
   if (loading) {
@@ -318,7 +414,52 @@ export function ReviewSection({ businessId, businessOwnerId }: ReviewSectionProp
                   </div>
                 )}
 
-                {/* Helpful Button */}
+                {/* Owner Response Form */}
+                {isOwner && !review.ownerResponse && (
+                  <div className="mt-4 ml-8">
+                    {respondingTo === review.id ? (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm font-medium mb-2">Respond to this review</p>
+                        <Textarea
+                          placeholder="Thank you for your feedback..."
+                          value={responseText}
+                          onChange={(e) => setResponseText(e.target.value)}
+                          className="mb-2"
+                          rows={3}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSubmitResponse(review.id)}
+                            disabled={submittingResponse || !responseText.trim()}
+                          >
+                            {submittingResponse ? "Posting..." : "Post Response"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setRespondingTo(null);
+                              setResponseText("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setRespondingTo(review.id)}
+                      >
+                        Respond to Review
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Helpful & Report Buttons */}
                 <div className="mt-3 flex items-center gap-4">
                   <button
                     onClick={() => handleHelpful(review.id)}
@@ -327,6 +468,53 @@ export function ReviewSection({ businessId, businessOwnerId }: ReviewSectionProp
                   >
                     👍 Helpful ({review.helpfulCount})
                   </button>
+
+                  {session?.user?.id && session.user.id !== review.user.id && (
+                    <>
+                      {reportingReview === review.id ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={reportReason}
+                            onChange={(e) => setReportReason(e.target.value)}
+                            className="text-sm border rounded px-2 py-1"
+                          >
+                            <option value="">Select reason...</option>
+                            <option value="spam">Spam</option>
+                            <option value="fake">Fake review</option>
+                            <option value="offensive">Offensive content</option>
+                            <option value="irrelevant">Irrelevant</option>
+                          </select>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs"
+                            onClick={() => handleReportReview(review.id)}
+                            disabled={!reportReason}
+                          >
+                            Submit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => {
+                              setReportingReview(null);
+                              setReportReason("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setReportingReview(review.id)}
+                          className="text-sm text-gray-400 hover:text-red-500"
+                        >
+                          🚩 Report
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             ))}

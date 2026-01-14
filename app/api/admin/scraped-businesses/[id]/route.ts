@@ -1,22 +1,59 @@
 import { NextResponse } from "next/server";
 import { db, isMockMode } from "@/lib/db";
 
-// PUT /api/admin/scraped-businesses/:id - Update scraped business status
+// Helper to check admin authorization
+function checkAdminAuth(req: Request): { authorized: boolean; userId: string | null; userRole: string | null } {
+  let userId: string | null = null;
+  let userRole: string | null = null;
+
+  if (isMockMode()) {
+    userId = req.headers.get("x-user-id");
+    userRole = req.headers.get("x-user-role");
+  }
+
+  return { authorized: userRole === "ADMIN", userId, userRole };
+}
+
+// GET /api/admin/scraped-businesses/:id - Get single scraped business
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { authorized } = checkAdminAuth(req);
+    if (!authorized) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const resolvedParams = await params;
+    const businessId = resolvedParams.id;
+
+    const business = await db.scrapedBusiness.findUnique({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(business);
+  } catch (error) {
+    console.error("Error fetching scraped business:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch business" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/admin/scraped-businesses/:id - Update scraped business status (approve/reject)
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    let userId: string | null = null;
-    let userRole: string | null = null;
-
-    if (isMockMode()) {
-      userId = req.headers.get("x-user-id");
-      userRole = req.headers.get("x-user-role");
-    }
-
-    // Check admin authorization
-    if (userRole !== "ADMIN") {
+    const { authorized } = checkAdminAuth(req);
+    if (!authorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -85,6 +122,99 @@ export async function PUT(
     console.error("Error updating scraped business:", error);
     return NextResponse.json(
       { error: "Failed to update business" },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/admin/scraped-businesses/:id - Edit scraped business details
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { authorized } = checkAdminAuth(req);
+    if (!authorized) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const resolvedParams = await params;
+    const businessId = resolvedParams.id;
+
+    // Only allow editing certain fields
+    const allowedFields = [
+      "name",
+      "description",
+      "category",
+      "address",
+      "city",
+      "state",
+      "zipCode",
+      "phone",
+      "email",
+      "website",
+      "latitude",
+      "longitude",
+    ];
+
+    const updateData: any = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: "No valid fields to update" },
+        { status: 400 }
+      );
+    }
+
+    const updatedBusiness = await db.scrapedBusiness.update({
+      where: { id: businessId },
+      data: updateData,
+    });
+
+    return NextResponse.json({
+      message: "Business updated successfully",
+      business: updatedBusiness,
+    });
+  } catch (error) {
+    console.error("Error editing scraped business:", error);
+    return NextResponse.json(
+      { error: "Failed to edit business" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/admin/scraped-businesses/:id - Delete scraped business
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { authorized } = checkAdminAuth(req);
+    if (!authorized) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const resolvedParams = await params;
+    const businessId = resolvedParams.id;
+
+    await db.scrapedBusiness.delete({
+      where: { id: businessId },
+    });
+
+    return NextResponse.json({
+      message: "Business deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting scraped business:", error);
+    return NextResponse.json(
+      { error: "Failed to delete business" },
       { status: 500 }
     );
   }

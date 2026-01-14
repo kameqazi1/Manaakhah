@@ -200,29 +200,24 @@ export default function AdminDashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Link href="/admin/reviews/flagged">
+                  <Link href="/admin/reviews">
                     <Button variant="outline" className="w-full justify-start">
-                      🚩 Flagged Reviews
+                      ⭐ All Reviews
                       {stats.flaggedReviews > 0 && (
                         <span className="ml-auto bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">
-                          {stats.flaggedReviews}
+                          {stats.flaggedReviews} flagged
                         </span>
                       )}
                     </Button>
                   </Link>
-                  <Link href="/admin/posts/flagged">
+                  <Link href="/admin/posts">
                     <Button variant="outline" className="w-full justify-start">
-                      🚩 Flagged Posts
+                      📝 All Posts
                       {stats.flaggedPosts > 0 && (
                         <span className="ml-auto bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">
-                          {stats.flaggedPosts}
+                          {stats.flaggedPosts} flagged
                         </span>
                       )}
-                    </Button>
-                  </Link>
-                  <Link href="/admin/reports">
-                    <Button variant="outline" className="w-full justify-start">
-                      📊 All Reports
                     </Button>
                   </Link>
                 </CardContent>
@@ -242,14 +237,9 @@ export default function AdminDashboard() {
                       👤 All Users
                     </Button>
                   </Link>
-                  <Link href="/admin/users/business-owners">
+                  <Link href="/admin/users?role=BUSINESS_OWNER">
                     <Button variant="outline" className="w-full justify-start">
                       💼 Business Owners
-                    </Button>
-                  </Link>
-                  <Link href="/admin/users/suspended">
-                    <Button variant="outline" className="w-full justify-start">
-                      🔒 Suspended Users
                     </Button>
                   </Link>
                 </CardContent>

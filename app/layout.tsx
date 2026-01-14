@@ -4,6 +4,7 @@ import "./globals.css";
 import { MockSessionProvider } from "@/components/mock-session-provider";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { Header } from "@/components/header";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,11 +22,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <MockSessionProvider>
-          <Header />
-          <main>{children}</main>
-          <RoleSwitcher />
-        </MockSessionProvider>
+        <LanguageProvider>
+          <MockSessionProvider>
+            <Header />
+            <main>{children}</main>
+            <RoleSwitcher />
+          </MockSessionProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

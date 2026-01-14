@@ -3,22 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet.markercluster/dist/MarkerCluster.css";
-import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CATEGORIES, BUSINESS_TAGS } from "./BusinessMap";
-
-// Extend Leaflet namespace to include markerClusterGroup
-declare module "leaflet" {
-  function markerClusterGroup(options?: any): MarkerClusterGroup;
-
-  interface MarkerClusterGroup extends L.LayerGroup {
-    clearLayers(): this;
-    addLayer(layer: L.Layer): this;
-  }
-}
 
 interface Business {
   id: string;
@@ -51,29 +39,14 @@ export default function LeafletMap({
 }: LeafletMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersLayerRef = useRef<L.MarkerClusterGroup | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Dynamically import and load markercluster plugin
-    const loadMapWithCluster = async () => {
-      try {
-        // Import the markercluster library
-        await import("leaflet.markercluster");
-
-        // Small delay to ensure plugin is registered with Leaflet
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Now initialize the map
-        initializeMap();
-      } catch (error) {
-        console.error("Failed to load markercluster:", error);
-      }
-    };
-
-    loadMapWithCluster();
+    // Initialize the map
+    initializeMap();
 
     // Cleanup function
     return () => {
@@ -130,52 +103,11 @@ export default function LeafletMap({
       dashArray: "5, 10",
     }).addTo(map);
 
-    // Initialize marker cluster group
-    // Check if markerClusterGroup is available (loaded by the plugin)
-    if (typeof (L as any).markerClusterGroup !== "function") {
-      console.error("MarkerClusterGroup is not available. Leaflet object:", L);
-      console.error("Available L properties:", Object.keys(L));
-      return;
-    }
-
-    console.log("✓ MarkerClusterGroup is available, creating cluster...");
-    const markers = (L as any).markerClusterGroup({
-      maxClusterRadius: 50,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      zoomToBoundsOnClick: true,
-      iconCreateFunction: (cluster) => {
-        const count = cluster.getChildCount();
-        let size = "small";
-        if (count > 10) size = "medium";
-        if (count > 50) size = "large";
-
-        return L.divIcon({
-          html: `<div style="
-            width: ${size === 'large' ? '50px' : size === 'medium' ? '40px' : '35px'};
-            height: ${size === 'large' ? '50px' : size === 'medium' ? '40px' : '35px'};
-            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-            border: 3px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: ${size === 'large' ? '16px' : size === 'medium' ? '14px' : '12px'};
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-          ">${count}</div>`,
-          className: "marker-cluster",
-          iconSize: L.point(
-            size === 'large' ? 50 : size === 'medium' ? 40 : 35,
-            size === 'large' ? 50 : size === 'medium' ? 40 : 35
-          ),
-        });
-      },
-    });
-
+    // Create layer group for markers
+    const markers = L.layerGroup();
     markersLayerRef.current = markers;
     map.addLayer(markers);
+    console.log("✓ Marker layer added to map");
 
     // Add custom CSS for animations
     const style = document.createElement("style");

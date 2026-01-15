@@ -54,15 +54,27 @@ export function Header() {
                 <Link href="/search" className="block px-4 py-2 text-sm hover:bg-gray-50">
                   🔍 Find Businesses
                 </Link>
+                <Link href="/search/image" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  📷 Image Search
+                </Link>
+                <Link href="/compare" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  ⚖️ Compare Businesses
+                </Link>
                 <Link href="/events" className="block px-4 py-2 text-sm hover:bg-gray-50">
                   📅 Events Calendar
                 </Link>
-                <Link href="/community" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                  👥 Community
+                <Link href="/forum" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  💬 Community Forum
                 </Link>
                 <hr className="my-2" />
                 <Link href="/favorites" className="block px-4 py-2 text-sm hover:bg-gray-50">
                   ❤️ My Favorites
+                </Link>
+                <Link href="/saved-searches" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  🔖 Saved Searches
+                </Link>
+                <Link href="/lists" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  📋 My Lists
                 </Link>
                 <Link href="/referrals" className="block px-4 py-2 text-sm hover:bg-gray-50">
                   🎁 Referral Program
@@ -100,12 +112,18 @@ export function Header() {
                       <Link href="/dashboard/updates" className="block px-4 py-2 text-sm hover:bg-gray-50">
                         📢 Updates & News
                       </Link>
+                      <Link href="/dashboard/benchmarking" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                        📊 Benchmarking
+                      </Link>
                       <hr className="my-2" />
                       <Link href="/bookings" className="block px-4 py-2 text-sm hover:bg-gray-50">
                         📆 Bookings
                       </Link>
                       <Link href="/messages" className="block px-4 py-2 text-sm hover:bg-gray-50">
                         💬 Messages
+                      </Link>
+                      <Link href="/dashboard/verification" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                        🔐 Verification
                       </Link>
                     </>
                   ) : (
@@ -175,6 +193,33 @@ export function Header() {
             </div>
           )}
 
+          {/* Community Dropdown */}
+          <div
+            className="relative"
+            onMouseEnter={() => handleMouseEnter("community")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <button className="px-4 py-2 text-sm font-medium hover:text-primary hover:bg-gray-50 rounded-md">
+              Community
+            </button>
+            {activeDropdown === "community" && (
+              <div className="absolute left-0 mt-1 w-56 bg-white border rounded-lg shadow-lg py-2 z-50">
+                <Link href="/community-impact" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  💚 Economic Impact
+                </Link>
+                <Link href="/trends" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  📈 Trend Reports
+                </Link>
+                <Link href="/prayer-times" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  🕌 Prayer Times
+                </Link>
+                <Link href="/insights" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                  📊 Spending Insights
+                </Link>
+              </div>
+            )}
+          </div>
+
           {/* Direct Links */}
           <Link href="/events" className="px-4 py-2 text-sm font-medium hover:text-primary hover:bg-gray-50 rounded-md">
             Events
@@ -203,17 +248,30 @@ export function Header() {
                   <Link href="/dashboard" className="block px-4 py-2 text-sm hover:bg-gray-50">
                     My Dashboard
                   </Link>
+                  <Link href={`/profile/${session.user?.id}`} className="block px-4 py-2 text-sm hover:bg-gray-50">
+                    My Profile
+                  </Link>
                   <Link href="/favorites" className="block px-4 py-2 text-sm hover:bg-gray-50">
                     My Favorites
                   </Link>
-                  <Link href="/referrals" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                    Referrals
+                  <Link href="/lists" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                    My Lists
                   </Link>
                   <Link href="/bookings" className="block px-4 py-2 text-sm hover:bg-gray-50">
                     Bookings
                   </Link>
                   <Link href="/messages" className="block px-4 py-2 text-sm hover:bg-gray-50">
                     Messages
+                  </Link>
+                  <hr className="my-2" />
+                  <Link href="/settings/notifications" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                    Notifications
+                  </Link>
+                  <Link href="/settings/calendar" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                    Calendar Sync
+                  </Link>
+                  <Link href="/dashboard/verification" className="block px-4 py-2 text-sm hover:bg-gray-50">
+                    Verification
                   </Link>
                   <hr className="my-2" />
                   <button
@@ -265,17 +323,45 @@ export function Header() {
                 <Link href="/search" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                   🔍 Find Businesses
                 </Link>
+                <Link href="/search/image" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  📷 Image Search
+                </Link>
+                <Link href="/compare" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  ⚖️ Compare Businesses
+                </Link>
                 <Link href="/events" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                   📅 Events Calendar
                 </Link>
-                <Link href="/community" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  👥 Community
+                <Link href="/forum" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  💬 Community Forum
                 </Link>
                 <Link href="/favorites" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                   ❤️ My Favorites
                 </Link>
-                <Link href="/referrals" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  🎁 Referral Program
+                <Link href="/saved-searches" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  🔖 Saved Searches
+                </Link>
+                <Link href="/lists" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  📋 My Lists
+                </Link>
+              </div>
+            </div>
+
+            {/* Community Section */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Community</h3>
+              <div className="space-y-1">
+                <Link href="/community-impact" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  💚 Economic Impact
+                </Link>
+                <Link href="/trends" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  📈 Trend Reports
+                </Link>
+                <Link href="/prayer-times" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  🕌 Prayer Times
+                </Link>
+                <Link href="/insights" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                  📊 Spending Insights
                 </Link>
               </div>
             </div>
@@ -349,11 +435,23 @@ export function Header() {
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Account</h3>
                 <div className="space-y-1">
+                  <Link href={`/profile/${session.user?.id}`} className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                    👤 My Profile
+                  </Link>
                   <Link href="/bookings" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                     📆 Bookings
                   </Link>
                   <Link href="/messages" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
                     💬 Messages
+                  </Link>
+                  <Link href="/settings/notifications" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                    🔔 Notifications
+                  </Link>
+                  <Link href="/settings/calendar" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                    📅 Calendar Sync
+                  </Link>
+                  <Link href="/dashboard/verification" className="block py-2 text-sm hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                    🔐 Verification
                   </Link>
                   <button
                     onClick={() => {

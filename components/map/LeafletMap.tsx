@@ -185,6 +185,16 @@ export default function LeafletMap({
       .leaflet-tooltip-bottom:before {
         border-top-color: rgba(17, 24, 39, 0.95);
       }
+      .leaflet-control-zoom {
+        z-index: 400 !important;
+      }
+      .leaflet-control-container {
+        z-index: 400 !important;
+      }
+      .leaflet-top,
+      .leaflet-bottom {
+        z-index: 400 !important;
+      }
     `;
     document.head.appendChild(style);
   };

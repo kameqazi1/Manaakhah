@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users can find and connect with verified Muslim-owned businesses in their area
-**Current focus:** Phase 3 - Security Fixes (Complete)
+**Current focus:** Phase 4 - Missing Email Features (In Progress)
 
 ## Current State
 
 **Milestone:** Fix Auth & Security
-**Phase:** 3 of 4 (Security Fixes)
-**Plan:** 2 of 2 (Complete)
-**Status:** Phase 3 Complete
+**Phase:** 4 of 4 (Missing Email Features)
+**Plan:** 1 of 1 (Complete)
+**Status:** Phase 4 Complete
 
-Progress: [====================] 75% (3 of 4 phases complete)
+Progress: [========================] 100% (4 of 4 phases complete)
 
 ## Phase Progress
 
@@ -23,7 +23,7 @@ Progress: [====================] 75% (3 of 4 phases complete)
 | 1 - Mock Mode Auth Fix | Complete | 1/1 |
 | 2 - Production Auth Flows | Complete | 2/2 |
 | 3 - Security Fixes | Complete | 2/2 |
-| 4 - Missing Email Features | Pending | 0/? |
+| 4 - Missing Email Features | Complete | 1/1 |
 
 ## Accumulated Decisions
 
@@ -42,6 +42,9 @@ Progress: [====================] 75% (3 of 4 phases complete)
 | 03-02 | 24-hour token for account linking | Matches other verification token expiration |
 | 03-02 | Delete existing pending links first | Prevents token accumulation on retry |
 | 03-02 | Redirect to info page on OAuth conflict | Not an error, just a required verification step |
+| 04-01 | Store 2FA codes in database with expiry | Server-side verification required for security |
+| 04-01 | 10-minute code expiration | Industry standard for 2FA codes |
+| 04-01 | 60-second cooldown between sends | Prevents spam, matches Phase 2 pattern |
 
 ## Session Log
 
@@ -56,22 +59,35 @@ Progress: [====================] 75% (3 of 4 phases complete)
 | 2026-01-19 | Phase 2 Plan 2 executed | 3 tasks, 3 commits, auto sign-in + rate limiting |
 | 2026-01-19 | Phase 3 Plan 2 executed | 3 tasks, 3 commits, safe OAuth account linking |
 | 2026-01-19 | Phase 3 Plan 1 executed | 2 tasks, 2 commits, env validation + mock header protection |
+| 2026-01-19 | Phase 4 Plan 1 executed | 3 tasks, 3 commits, 2FA email delivery complete |
 
 ## Session Continuity
 
-**Last session:** 2026-01-19T18:00:00Z
-**Stopped at:** Completed 03-01-PLAN.md (Phase 3 Complete)
+**Last session:** 2026-01-19T22:15:53Z
+**Stopped at:** Completed 04-01-PLAN.md (Milestone Complete)
 **Resume file:** None
 
-## Next Action
+## Milestone Complete
 
-**Run:** `/gsd:plan-phase 4` (Missing Email Features)
+**Fix Auth & Security milestone is COMPLETE.**
 
-Phase 3 complete. Security fixes in place:
-- Environment validation with @t3-oss/env-nextjs (build-time check)
-- Mock header protection middleware with rate-limited logging
-- Safe OAuth account linking (email verification required)
-- SEC-02, SEC-03 satisfied
+All 4 phases executed successfully:
+- Phase 1: Mock mode auth fully functional
+- Phase 2: Production auth flows (verify-email, reset-password, auto sign-in)
+- Phase 3: Security fixes (env validation, mock header protection, safe OAuth linking)
+- Phase 4: Missing email features (2FA email delivery)
+
+### Requirements Satisfied
+
+| ID | Requirement | Status |
+|----|-------------|--------|
+| AUTH-01 | Mock mode session persistence | Complete |
+| AUTH-02 | Production email verification | Complete |
+| AUTH-03 | Password reset flow | Complete |
+| SEC-01 | Environment variable validation | Complete |
+| SEC-02 | Mock header protection | Complete |
+| SEC-03 | Safe OAuth account linking | Complete |
+| FEAT-01 | 2FA email delivery | Complete |
 
 ---
 *State updated: 2026-01-19*

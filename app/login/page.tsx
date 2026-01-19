@@ -22,6 +22,8 @@ function LoginContent() {
   const verified = searchParams.get("verified") === "true";
   const reset = searchParams.get("reset") === "true";
   const registered = searchParams.get("registered") === "true";
+  const accountLinked = searchParams.get("success") === "account_linked";
+  const linkedProvider = searchParams.get("provider");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -107,6 +109,13 @@ function LoginContent() {
               <div className="bg-blue-50 text-blue-600 p-3 rounded-md text-sm flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Registration successful! Please check your email to verify your account.
+              </div>
+            )}
+
+            {accountLinked && (
+              <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Your {linkedProvider} account has been linked successfully! You can now sign in with either method.
               </div>
             )}
 

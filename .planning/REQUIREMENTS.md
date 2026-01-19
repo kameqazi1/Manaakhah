@@ -9,9 +9,9 @@ Requirements for this work phase. Each maps to roadmap phases.
 
 ### Authentication (Mock Mode)
 
-- [ ] **AUTH-01**: User can register with email/password and immediately sign in
-- [ ] **AUTH-02**: User session persists across page refreshes in mock mode
-- [ ] **AUTH-03**: Mock session provider correctly stores and retrieves user data
+- [x] **AUTH-01**: User can register with email/password and immediately sign in
+- [x] **AUTH-02**: User session persists across page refreshes in mock mode
+- [x] **AUTH-03**: Mock session provider correctly stores and retrieves user data
 
 ### Authentication (Production Mode)
 
@@ -69,9 +69,9 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 2 | Pending |
 | AUTH-05 | Phase 2 | Pending |
 | AUTH-06 | Phase 2 | Pending |
@@ -90,4 +90,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after initial definition*
+*Last updated: 2026-01-19 after Phase 1 completion*

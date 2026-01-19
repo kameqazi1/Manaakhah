@@ -7,7 +7,7 @@
 
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
-| 1 | Mock Mode Auth Fix | Pending | AUTH-01, AUTH-02, AUTH-03 |
+| 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
 | 2 | Production Auth Flows | Pending | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
 | 3 | Security Fixes | Pending | SEC-01, SEC-02, SEC-03 |
 | 4 | Missing Email Features | Pending | FEAT-01, FEAT-02, FEAT-03 |
@@ -32,10 +32,12 @@ Currently, registration creates a user in mock storage but login fails to authen
 - `app/(auth)/login/page.tsx` - Login page
 
 **Success criteria:**
-- [ ] Register new user in mock mode
-- [ ] Sign in with same credentials immediately after
-- [ ] Session persists on page refresh
-- [ ] Sign out works correctly
+- [x] Register new user in mock mode
+- [x] Sign in with same credentials immediately after
+- [x] Session persists on page refresh
+- [x] Sign out works correctly
+
+**Completed:** 2026-01-19
 
 ---
 

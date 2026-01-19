@@ -10,7 +10,7 @@
 | 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
 | 2 | Production Auth Flows | Complete | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
 | 3 | Security Fixes | Complete | SEC-01, SEC-02, SEC-03 |
-| 4 | Missing Email Features | Pending | FEAT-01, FEAT-02, FEAT-03 |
+| 4 | Missing Email Features | Planned | FEAT-01, FEAT-02, FEAT-03 |
 
 ## Phase 1: Mock Mode Auth Fix
 
@@ -123,16 +123,22 @@ Plans:
 - FEAT-03: Staff invitation emails sent
 
 **Context:**
-2FA email/SMS currently just logs to console. Staff invitations create records but don't notify. These are placeholder implementations that need completing.
+2FA email/SMS currently just logs to console. Staff invitations create records but don't notify. These are placeholder implementations that need completing. Research recommends removing SMS option (not in UI, adds cost/complexity) and implementing email 2FA using existing Resend infrastructure.
 
 **Key files:**
 - `lib/auth/two-factor.ts` - 2FA code generation/sending
 - `app/api/business/[id]/staff/route.ts` - Staff invitation
 - `lib/email.ts` - Email sending
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md - Implement 2FA email delivery (FEAT-01)
+- [ ] 04-02-PLAN.md - Staff invitation emails + remove SMS option (FEAT-02, FEAT-03)
+
 **Success criteria:**
 - [ ] 2FA email method sends real email with code
-- [ ] SMS method either works or is removed from UI
+- [ ] SMS method removed from API and types (decision: not implementing)
 - [ ] Staff invitation sends email to invited user
 
 ---
@@ -148,4 +154,4 @@ Phase 4 (Email Features) → depends on Phase 2 (email infrastructure verified)
 
 ---
 *Roadmap created: 2026-01-19*
-*Phase 3 planned: 2026-01-19*
+*Phase 4 planned: 2026-01-19*

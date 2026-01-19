@@ -27,6 +27,10 @@ export async function POST(req: Request) {
           gt: new Date(),
         },
       },
+      select: {
+        id: true,
+        email: true,
+      },
     });
 
     if (!user) {
@@ -50,12 +54,13 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({
-      message: "Password reset successfully. You can now log in with your new password.",
+      message: "Password reset successfully.",
+      email: user.email,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }

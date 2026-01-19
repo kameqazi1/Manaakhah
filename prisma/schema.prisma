@@ -10,10 +10,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =============================================================================
+// ENUMS
+// =============================================================================
+
 enum UserRole {
   CONSUMER
   BUSINESS_OWNER
+  STAFF
+  MODERATOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum BusinessStatus {
@@ -21,6 +28,8 @@ enum BusinessStatus {
   PENDING_REVIEW
   PUBLISHED
   REJECTED
+  TEMPORARILY_CLOSED
+  PERMANENTLY_CLOSED
 }
 
 enum BusinessCategory {
@@ -39,21 +48,75 @@ enum BusinessCategory {
   BARBER_SALON
   CHILDCARE
   COMMUNITY_AID
+  REAL_ESTATE
+  INSURANCE
+  IT_SERVICES
+  CLOTHING
+  JEWELRY
+  TRAVEL
+  CATERING
+  FOOD_TRUCK
+  BAKERY
+  BUTCHER
+  PHARMACY
+  DENTAL
+  OPTOMETRY
+  MENTAL_HEALTH
+  FITNESS
+  MARTIAL_ARTS
+  PHOTOGRAPHY
+  EVENT_PLANNING
+  WEDDING_SERVICES
+  FUNERAL_SERVICES
+  FINANCIAL_SERVICES
+  MORTGAGE
+  CLEANING
+  LANDSCAPING
+  MOVING
+  PRINTING
   OTHER
 }
 
 enum BusinessTag {
   MUSLIM_OWNED
   HALAL_VERIFIED
+  ZABIHA_CERTIFIED
   SISTERS_FRIENDLY
+  BROTHERS_ONLY
   KID_FRIENDLY
   WHEELCHAIR_ACCESSIBLE
   PRAYER_SPACE
+  WUDU_FACILITIES
+  FAMILY_OWNED
+  VETERAN_OWNED
+  WOMEN_OWNED
+  ACCEPTS_ZAKAT
+  SADAQAH_RECIPIENT
+  INTEREST_FREE
+  SHARIA_COMPLIANT
+  ORGANIC
+  VEGAN_OPTIONS
+  GLUTEN_FREE
+  DELIVERY
+  CURBSIDE
+  APPOINTMENT_ONLY
+  WALK_INS_WELCOME
+  OPEN_24_HOURS
+  RAMADAN_HOURS
+  WIFI_AVAILABLE
+  PARKING_AVAILABLE
+  OUTDOOR_SEATING
+  CATERING_AVAILABLE
+  PRIVATE_EVENTS
+  LATE_NIGHT
+  STUDENT_FRIENDLY
 }
 
 enum VerificationType {
   HALAL
   MUSLIM_OWNED
+  BUSINESS_LICENSE
+  IDENTITY
 }
 
 enum VerificationStatus {
@@ -69,13 +132,16 @@ enum BookingStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+  WAITLISTED
 }
 
 enum PaymentStatus {
   NOT_REQUIRED
   PENDING
+  DEPOSIT_PAID
   PAID
   REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 enum ConversationStatus {
@@ -83,6 +149,7 @@ enum ConversationStatus {
   RESOLVED
   CLOSED
   ARCHIVED
+  DISPUTE
 }
 
 enum PostType {
@@ -92,6 +159,8 @@ enum PostType {
   QUESTION
   DISCUSSION
   PROMOTION
+  POLL
+  SPONSORED
 }
 
 enum PostStatus {
@@ -122,6 +191,8 @@ enum ReportReason {
   OFFENSIVE
   IRRELEVANT
   COMPETITOR
+  HARASSMENT
+  MISINFORMATION
   OTHER
 }
 
@@ -130,6 +201,7 @@ enum ReportStatus {
   INVESTIGATING
   RESOLVED
   DISMISSED
+  APPEALED
 }
 
 enum ViewSource {
@@ -138,6 +210,9 @@ enum ViewSource {
   PROFILE
   RECOMMENDATION
   COMMUNITY
+  DEAL
+  QR_CODE
+  SHARE_LINK
 }
 
 enum PriceRange {
@@ -151,6 +226,7 @@ enum ClaimStatus {
   UNCLAIMED
   CLAIMED
   DISPUTED
+  TRANSFERRED
 }
 
 enum ScrapedBusinessClaimStatus {
@@ -159,51 +235,182 @@ enum ScrapedBusinessClaimStatus {
   REJECTED
 }
 
+enum NotificationType {
+  BOOKING_REQUEST
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_REMINDER
+  NEW_MESSAGE
+  NEW_REVIEW
+  REVIEW_RESPONSE
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  DEAL_EXPIRING
+  DEAL_NEARBY
+  EVENT_REMINDER
+  EVENT_NEARBY
+  FOLLOWER_NEW
+  POST_LIKE
+  POST_COMMENT
+  MENTION
+  SYSTEM_ANNOUNCEMENT
+  SECURITY_ALERT
+  PAYMENT_RECEIVED
+  WAITLIST_AVAILABLE
+}
+
+enum DealType {
+  PERCENTAGE_OFF
+  FIXED_AMOUNT_OFF
+  BUY_ONE_GET_ONE
+  SPECIAL_PRICE
+  FREE_ITEM
+  FLASH_DEAL
+  LOYALTY_DEAL
+  FIRST_TIME
+}
+
+enum TwoFactorMethod {
+  AUTHENTICATOR
+  SMS
+  EMAIL
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  ROLE_CHANGE
+  PERMISSION_CHANGE
+  VERIFICATION
+  MODERATION
+  EXPORT
+  IMPORT
+}
+
+enum AppealStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+// =============================================================================
+// USER & AUTHENTICATION MODELS
+// =============================================================================
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
   emailVerified DateTime?
   name          String?
   phone         String?
-  password      String
+  password      String?
   role          UserRole  @default(CONSUMER)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  bio           String?   @db.Text
+  location      String?
 
   // Email verification
   emailVerificationToken   String?   @unique
   emailVerificationExpires DateTime?
 
   // Password reset
-  passwordResetToken       String?   @unique
-  passwordResetExpires     DateTime?
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
 
-  businesses           Business[]
-  reviews              Review[]
-  sentMessages         Message[]             @relation("SentMessages")
-  conversations        Conversation[]        @relation("CustomerConversations")
-  accounts             Account[]
-  sessions             Session[]
-  customerBookings     Booking[]             @relation("CustomerBookings")
-  postLikes            PostLike[]
-  posts                CommunityPost[]
-  postComments         PostComment[]
-  commentLikes         CommentLike[]
-  reviewReports        ReviewReport[]        @relation("ReportedReviews")
-  resolvedReports      ReviewReport[]        @relation("ResolvedReports")
-  reviewHelpful        ReviewHelpful[]
-  businessViews        BusinessView[]
-  notifications        Notification[]
+  // Rate limiting for resend verification
+  lastVerificationEmailSent DateTime?
+
+  // Auto-login token (for post-verification sign-in)
+  autoLoginToken        String?   @unique
+  autoLoginTokenExpires DateTime?
+
+  // Two-Factor Authentication
+  twoFactorEnabled     Boolean          @default(false)
+  twoFactorMethod      TwoFactorMethod?
+  twoFactorSecret      String?
+  twoFactorBackupCodes String[]
+
+  // Trust & Reputation
+  trustScore         Int     @default(50) // 0-100
+  karmaPoints        Int     @default(0)
+  isVerifiedReviewer Boolean @default(false)
+  reviewCount        Int     @default(0)
+  helpfulVoteCount   Int     @default(0)
+
+  // Preferences
+  preferredLanguage String  @default("en")
+  timezone          String  @default("America/Los_Angeles")
+  notificationPrefs Json? // {email: true, push: true, sms: false, categories: {...}}
+  quietHoursStart   String? // "22:00"
+  quietHoursEnd     String? // "08:00"
+
+  // Status
+  isBanned       Boolean   @default(false)
+  banReason      String?
+  bannedAt       DateTime?
+  bannedUntil    DateTime?
+  isShadowBanned Boolean   @default(false)
+
+  lastLoginAt  DateTime?
+  lastActiveAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  businesses         Business[]
+  staffRoles         StaffRole[]
+  reviews            Review[]
+  sentMessages       Message[]          @relation("SentMessages")
+  conversations      Conversation[]     @relation("CustomerConversations")
+  accounts           Account[]
+  sessions           Session[]
+  customerBookings   Booking[]          @relation("CustomerBookings")
+  postLikes          PostLike[]
+  posts              CommunityPost[]
+  postComments       PostComment[]
+  commentLikes       CommentLike[]
+  reviewReports      ReviewReport[]     @relation("ReportedReviews")
+  resolvedReports    ReviewReport[]     @relation("ResolvedReports")
+  reviewHelpful      ReviewHelpful[]
+  businessViews      BusinessView[]
+  notifications      Notification[]
+  activityLogs       ActivityLog[]
+  savedBusinesses    SavedBusiness[]
+  savedSearches      SavedSearch[]
+  businessLists      BusinessList[]
+  followedBusinesses BusinessFollower[]
+  followedUsers      UserFollow[]       @relation("Follower")
+  followers          UserFollow[]       @relation("Following")
+  eventRsvps         EventRsvp[]
+  pollVotes          PollVote[]
+  referralsSent      Referral[]         @relation("Referrer")
+  referralsReceived  Referral[]         @relation("Referred")
+  appeals            Appeal[]
+  reportedContent    ContentReport[]
+  postReports        PostReport[]
 
   @@index([email])
+  @@index([trustScore])
+  @@index([role])
 }
 
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
-  provider          String
+  provider          String // google, apple, credentials
   providerAccountId String
   refresh_token     String? @db.Text
   access_token      String? @db.Text
@@ -224,7 +431,11 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress    String?
+  userAgent    String?
+  deviceType   String? // mobile, desktop, tablet
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -237,70 +448,168 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model ActivityLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  entityType String // User, Business, Review, etc.
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// BUSINESS MODELS
+// =============================================================================
+
 model Business {
-  id          String           @id @default(cuid())
-  ownerId     String
-  name        String
-  slug        String           @unique
-  description String           @db.Text
-  shortDescription String?     @db.VarChar(200)
-  category    BusinessCategory
-  address     String
-  city        String
-  state       String           @default("CA")
-  zipCode     String
-  latitude    Float
-  longitude   Float
-  phone       String
-  email       String?
-  website     String?
-  hours       Json? // {monday: {open: "09:00", close: "17:00"}, ...}
-  services    String[] // Array of services offered
-  status      BusinessStatus   @default(DRAFT)
+  id               String           @id @default(cuid())
+  ownerId          String
+  name             String
+  slug             String           @unique
+  description      String           @db.Text
+  shortDescription String?          @db.VarChar(200)
+  category         BusinessCategory
+  address          String
+  city             String
+  state            String           @default("CA")
+  zipCode          String
+  latitude         Float
+  longitude        Float
+  phone            String
+  email            String?
+  website          String?
 
-  // New fields for enhanced features
-  priceRange           PriceRange?
-  hoursOfOperation     Json?
-  verificationStatus   VerificationStatus @default(PENDING)
-  verifiedAt           DateTime?
-  verifiedBy           String?
-  viewCount            Int      @default(0)
-  claimStatus          ClaimStatus @default(UNCLAIMED)
-  coverImage           String?
-  logoImage            String?
-  scrapedFrom          String?
-  scrapedAt            DateTime?
-  confidenceScore      Int?
-  averageRating        Float?   @default(0)
-  totalReviews         Int      @default(0)
-  ratingBreakdown      Json?
-  isScraped            Boolean  @default(false)
-  scrapedBusinessId    String?  @unique
+  // Hours & Availability
+  hours            Json? // Standard hours
+  seasonalHours    Json? // Holiday/seasonal variations
+  ramadanHours     Json? // Ramadan-specific hours
+  temporaryClosure Json? // {isActive: true, reason: "", until: Date}
 
-  // Masjid specific fields
-  prayerTimes Json? // {fajr: "05:30", dhuhr: "13:00", ...}
-  jummahTime  String?
+  services        String[]
+  amenities       String[] // WiFi, Parking, etc.
+  languagesSpoken String[] // Languages staff can speak
+
+  status BusinessStatus @default(DRAFT)
+
+  // Pricing & Menu
+  priceRange     PriceRange?
+  menuUrl        String?
+  menuItems      Json? // Structured menu data
+  servicePricing Json? // {service: {price, duration, description}}
+
+  // Delivery & Pickup
+  hasDelivery    Boolean @default(false)
+  hasPickup      Boolean @default(false)
+  deliveryRadius Float? // in miles
+  deliveryFee    Float?
+  minimumOrder   Float?
+
+  // Verification & Trust
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  trustScore         Int                @default(50)
+
+  // Analytics
+  viewCount      Int    @default(0)
+  clickCount     Int    @default(0)
+  bookingCount   Int    @default(0)
+  conversionRate Float?
+
+  // Claim & Ownership
+  claimStatus ClaimStatus @default(UNCLAIMED)
+  claimedAt   DateTime?
+
+  // Media
+  coverImage     String?
+  logoImage      String?
+  videoUrl       String?
+  virtualTourUrl String?
+
+  // Scraping
+  scrapedFrom       String?
+  scrapedAt         DateTime?
+  confidenceScore   Int?
+  isScraped         Boolean   @default(false)
+  scrapedBusinessId String?   @unique
+
+  // Ratings
+  averageRating   Float? @default(0)
+  totalReviews    Int    @default(0)
+  ratingBreakdown Json? // {5: 10, 4: 5, 3: 2, ...}
+  sentimentScore  Float? // AI-analyzed sentiment
+
+  // Masjid specific
+  prayerTimes     Json?
+  jummahTime      String?
+  hasWomenSection Boolean @default(false)
+  donationLink    String?
 
   // Aid organization specific
-  aidServices String[] // Services for community aid orgs
-  externalUrl String?  // External application URL
+  aidServices  String[]
+  externalUrl  String?
+  acceptsZakat Boolean  @default(false)
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  // Subscription & Features
+  subscriptionTier    SubscriptionTier @default(FREE)
+  subscriptionExpires DateTime?
+  featuredUntil       DateTime?
 
-  owner                User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  photos               BusinessPhoto[]
-  tags                 BusinessTagRelation[]
-  reviews              Review[]
-  conversations        Conversation[]
-  events               Event[]
-  bookings             Booking[]
-  posts                CommunityPost[]
-  businessViews        BusinessView[]
-  availability         BusinessAvailability[]
+  // Multi-location
+  parentBusinessId String?
+  isHeadquarters   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner                  User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parentBusiness         Business?               @relation("BusinessLocations", fields: [parentBusinessId], references: [id])
+  childLocations         Business[]              @relation("BusinessLocations")
+  photos                 BusinessPhoto[]
+  tags                   BusinessTagRelation[]
+  reviews                Review[]
+  conversations          Conversation[]
+  events                 Event[]
+  bookings               Booking[]
+  posts                  CommunityPost[]
+  businessViews          BusinessView[]
+  availability           BusinessAvailability[]
   availabilityExceptions AvailabilityException[]
-  deals                Deal[]
-  verificationRequests VerificationRequest[]
+  deals                  Deal[]
+  verificationRequests   VerificationRequest[]
+  staffRoles             StaffRole[]
+  menuCategories         MenuCategory[]
+  questions              BusinessQuestion[]
+  followers              BusinessFollower[]
+  savedBy                SavedBusiness[]
+  fundraisingCampaigns   FundraisingCampaign[]
+  messageTemplates       MessageTemplate[]
+  analyticsSnapshots     AnalyticsSnapshot[]
 
   @@index([ownerId])
   @@index([slug])
@@ -309,13 +618,36 @@ model Business {
   @@index([status])
   @@index([city, category])
   @@index([status, verificationStatus])
+  @@index([parentBusinessId])
+}
+
+model StaffRole {
+  id          String    @id @default(cuid())
+  businessId  String
+  userId      String
+  role        String // manager, staff, scheduler, etc.
+  permissions Json // {canEditBusiness: true, canManageBookings: true, ...}
+  invitedBy   String?
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
 }
 
 model BusinessPhoto {
   id         String   @id @default(cuid())
   businessId String
   url        String
+  caption    String?
+  type       String   @default("general") // general, menu, interior, exterior, team
   order      Int      @default(0)
+  isApproved Boolean  @default(true)
+  uploadedBy String?
   createdAt  DateTime @default(now())
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -335,53 +667,213 @@ model BusinessTagRelation {
   @@index([tag])
 }
 
+model BusinessFollower {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+}
+
+model SavedBusiness {
+  id         String   @id @default(cuid())
+  userId     String
+  businessId String
+  listId     String?
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  list     BusinessList? @relation(fields: [listId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, businessId])
+  @@index([userId])
+  @@index([businessId])
+  @@index([listId])
+}
+
+model BusinessList {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  description     String?
+  isPublic        Boolean  @default(false)
+  isCollaborative Boolean  @default(false)
+  coverImage      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businesses SavedBusiness[]
+
+  @@index([userId])
+}
+
+model SavedSearch {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  query        String
+  filters      Json // {category, tags, priceRange, radius, etc.}
+  alertEnabled Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// =============================================================================
+// MENU MODELS
+// =============================================================================
+
+model MenuCategory {
+  id          String  @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items    MenuItem[]
+
+  @@index([businessId])
+}
+
+model MenuItem {
+  id           String   @id @default(cuid())
+  categoryId   String
+  name         String
+  description  String?  @db.Text
+  price        Float
+  salePrice    Float?
+  image        String?
+  isHalal      Boolean  @default(true)
+  isVegetarian Boolean  @default(false)
+  isVegan      Boolean  @default(false)
+  isGlutenFree Boolean  @default(false)
+  spiceLevel   Int? // 0-5
+  calories     Int?
+  allergens    String[]
+  isAvailable  Boolean  @default(true)
+  order        Int      @default(0)
+
+  category MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+}
+
+// =============================================================================
+// BUSINESS Q&A
+// =============================================================================
+
+model BusinessQuestion {
+  id          String   @id @default(cuid())
+  businessId  String
+  askerId     String?
+  question    String   @db.Text
+  isAnonymous Boolean  @default(false)
+  upvotes     Int      @default(0)
+  status      String   @default("open") // open, answered, closed
+  createdAt   DateTime @default(now())
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  answers  BusinessAnswer[]
+
+  @@index([businessId])
+}
+
+model BusinessAnswer {
+  id         String   @id @default(cuid())
+  questionId String
+  answererId String?
+  answer     String   @db.Text
+  isOfficial Boolean  @default(false) // From business owner
+  upvotes    Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  question BusinessQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+// =============================================================================
+// REVIEW MODELS
+// =============================================================================
+
 model Review {
   id         String   @id @default(cuid())
   businessId String
   userId     String
-  bookingId  String?
+  bookingId  String?  @unique
   rating     Int // 1-5
   title      String?  @db.VarChar(100)
   content    String   @db.Text
   text       String?  @db.Text
   photos     String[]
-  tags       Json? // {serviceQuality: true, cleanliness: true, familyFriendly: true}
+  tags       Json? // {serviceQuality: true, cleanliness: true, ...}
 
-  isVerified   Boolean  @default(false)
-  verifiedAt   DateTime?
-  helpfulCount Int      @default(0)
-  reportCount  Int      @default(0)
+  // Verification
+  isVerified        Boolean   @default(false)
+  isVerifiedBooking Boolean   @default(false)
+  verifiedAt        DateTime?
 
+  // Engagement
+  helpfulCount Int @default(0)
+  reportCount  Int @default(0)
+
+  // AI Analysis
+  sentimentScore Float? // -1 to 1
+  aiSummary      String? @db.Text
+
+  // Response
   ownerResponse String?   @db.Text
   respondedAt   DateTime?
 
+  // Moderation
   status      ReviewStatus @default(PUBLISHED)
   flagReason  String?
   moderatedBy String?
   moderatedAt DateTime?
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // Edit tracking
+  isEdited         Boolean   @default(false)
+  editedAt         DateTime?
+  editDeadline     DateTime? // Reviews can only be edited within X days
+  previousVersions Json[]
 
-  business      Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking       Booking?         @relation(fields: [bookingId], references: [id])
-  reviewPhotos  ReviewPhoto[]
-  flags         ReviewFlag[]
-  helpfulVotes  ReviewHelpful[]
-  reports       ReviewReport[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([businessId, userId, bookingId])
+  business     Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking      Booking?        @relation(fields: [bookingId], references: [id])
+  reviewPhotos ReviewPhoto[]
+  flags        ReviewFlag[]
+  helpfulVotes ReviewHelpful[]
+  reports      ReviewReport[]
+
   @@index([businessId])
   @@index([userId])
   @@index([rating])
   @@index([businessId, status])
+  @@index([createdAt])
 }
 
 model ReviewPhoto {
-  id       String @id @default(cuid())
-  reviewId String
-  url      String
+  id          String    @id @default(cuid())
+  reviewId    String
+  url         String
+  isApproved  Boolean   @default(false)
+  moderatedAt DateTime?
 
   review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
@@ -413,15 +905,15 @@ model ReviewHelpful {
 }
 
 model ReviewReport {
-  id          String       @id @default(cuid())
-  reviewId    String
-  reportedBy  String
-  reason      ReportReason
-  details     String?      @db.Text
-  status      ReportStatus @default(PENDING)
-  resolvedBy  String?
-  resolvedAt  DateTime?
-  createdAt   DateTime     @default(now())
+  id         String       @id @default(cuid())
+  reviewId   String
+  reportedBy String
+  reason     ReportReason
+  details    String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  resolvedBy String?
+  resolvedAt DateTime?
+  createdAt  DateTime     @default(now())
 
   review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   reporter User   @relation("ReportedReviews", fields: [reportedBy], references: [id])
@@ -431,26 +923,34 @@ model ReviewReport {
   @@index([status])
 }
 
-model Conversation {
-  id         String             @id @default(cuid())
-  businessId String
-  customerId String
-  subject    String?            @db.VarChar(200)
-  status     ConversationStatus @default(OPEN)
-  lastMessageAt DateTime        @default(now())
+// =============================================================================
+// MESSAGING MODELS
+// =============================================================================
 
-  unreadByCustomer Int     @default(0)
-  unreadByBusiness Int     @default(0)
+model Conversation {
+  id            String             @id @default(cuid())
+  businessId    String
+  customerId    String
+  subject       String?            @db.VarChar(200)
+  status        ConversationStatus @default(OPEN)
+  lastMessageAt DateTime           @default(now())
+
+  unreadByCustomer Int @default(0)
+  unreadByBusiness Int @default(0)
 
   isBlocked     Boolean @default(false)
   blockedBy     String?
   blockedReason String?
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // Dispute handling
+  disputeId  String?
+  assignedTo String? // Admin handling dispute
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer User     @relation("CustomerConversations", fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer User      @relation("CustomerConversations", fields: [customerId], references: [id], onDelete: Cascade)
   messages Message[]
 
   @@unique([businessId, customerId])
@@ -460,19 +960,31 @@ model Conversation {
 }
 
 model Message {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   conversationId String
   senderId       String
-  content        String    @db.Text
-  text           String?   @db.Text
+  content        String   @db.Text
+  text           String?  @db.Text
   attachments    String[]
-  read           Boolean   @default(false)
-  readAt         DateTime?
-  editedAt       DateTime?
-  deletedAt      DateTime?
-  isFlagged      Boolean   @default(false)
-  flagReason     String?
-  createdAt      DateTime  @default(now())
+  voiceNoteUrl   String?
+
+  // Status
+  read     Boolean   @default(false)
+  readAt   DateTime?
+  isPinned Boolean   @default(false)
+
+  // Editing
+  editedAt  DateTime?
+  deletedAt DateTime?
+
+  // Moderation
+  isFlagged  Boolean @default(false)
+  flagReason String?
+
+  // Template tracking
+  templateId String?
+
+  createdAt DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
@@ -482,70 +994,89 @@ model Message {
   @@index([conversationId, createdAt])
 }
 
-model VerificationRequest {
-  id          String             @id @default(cuid())
-  businessId  String
-  type        VerificationType
-  documentUrl String
-  status      VerificationStatus @default(PENDING)
-  reviewedBy  String?
-  reviewNote  String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+model MessageTemplate {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  content    String   @db.Text
+  category   String // greeting, booking, response, etc.
+  variables  String[] // {customerName}, {businessName}, etc.
+  useCount   Int      @default(0)
+  createdAt  DateTime @default(now())
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([businessId])
-  @@index([status])
 }
 
-model Event {
+model AutoReply {
   id          String   @id @default(cuid())
   businessId  String
-  title       String
-  description String   @db.Text
-  startTime   DateTime
-  endTime     DateTime
+  isActive    Boolean  @default(true)
+  message     String   @db.Text
+  triggerType String // after_hours, first_contact, keyword
+  triggerData Json? // {keywords: [], startTime: "", endTime: ""}
   createdAt   DateTime @default(now())
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
   @@index([businessId])
-  @@index([startTime])
 }
 
+// =============================================================================
+// BOOKING MODELS
+// =============================================================================
+
 model Booking {
-  id              String        @id @default(cuid())
+  id              String   @id @default(cuid())
   businessId      String
   customerId      String
   serviceType     String
+  services        Json? // Array of services for multi-service booking
   appointmentDate DateTime
   appointmentTime String
-  duration        Int
-  notes           String?       @db.Text
+  duration        Int // in minutes
+  notes           String?  @db.Text
 
-  status          BookingStatus @default(PENDING)
-  statusHistory   Json[]
+  status        BookingStatus @default(PENDING)
+  statusHistory Json[]
 
-  ownerNotes      String?       @db.Text
+  ownerNotes      String? @db.Text
   rejectionReason String?
 
-  reminderSent    Boolean       @default(false)
-  reminderSentAt  DateTime?
+  // Group booking
+  partySize      Int     @default(1)
+  isGroupBooking Boolean @default(false)
 
-  price           Float?
-  paymentStatus   PaymentStatus @default(NOT_REQUIRED)
-  paymentId       String?
+  // Reminders
+  reminderSent   Boolean   @default(false)
+  reminderSentAt DateTime?
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  confirmedAt     DateTime?
-  completedAt     DateTime?
-  cancelledAt     DateTime?
+  // Calendar sync
+  googleCalendarId String?
+  appleCalendarId  String?
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  customer User     @relation("CustomerBookings", fields: [customerId], references: [id])
-  review   Review?
+  // Payment
+  price         Float?
+  depositAmount Float?
+  paymentStatus PaymentStatus @default(NOT_REQUIRED)
+  paymentId     String?
+
+  // Cancellation
+  cancellationFee    Float?
+  cancellationReason String?
+
+  // No-show tracking
+  noShowCount Int @default(0) // For customer
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  confirmedAt DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer      User      @relation("CustomerBookings", fields: [customerId], references: [id])
+  review        Review?
+  waitlistEntry Waitlist?
 
   @@index([businessId, appointmentDate])
   @@index([customerId])
@@ -555,10 +1086,12 @@ model Booking {
 model BusinessAvailability {
   id           String  @id @default(cuid())
   businessId   String
-  dayOfWeek    Int
+  dayOfWeek    Int // 0-6 (Sunday-Saturday)
   startTime    String
   endTime      String
-  slotDuration Int
+  slotDuration Int // in minutes
+  bufferTime   Int     @default(0) // Buffer between appointments
+  maxBookings  Int? // Max bookings per slot
   isAvailable  Boolean @default(true)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -582,39 +1115,245 @@ model AvailabilityException {
   @@index([businessId])
 }
 
-model CommunityPost {
-  id          String     @id @default(cuid())
-  authorId    String
-  businessId  String?
-  title       String     @db.VarChar(200)
-  content     String     @db.Text
-  postType    PostType
-  media       String[]
-  tags        String[]
+model Waitlist {
+  id         String    @id @default(cuid())
+  bookingId  String    @unique
+  position   Int
+  notifiedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
 
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([position])
+}
+
+// =============================================================================
+// VERIFICATION MODELS
+// =============================================================================
+
+model VerificationRequest {
+  id           String             @id @default(cuid())
+  businessId   String
+  type         VerificationType
+  documentUrl  String
+  documentType String? // license, certificate, id, etc.
+  status       VerificationStatus @default(PENDING)
+  reviewedBy   String?
+  reviewNote   String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([status])
+}
+
+// =============================================================================
+// EVENT MODELS
+// =============================================================================
+
+model Event {
+  id          String  @id @default(cuid())
+  businessId  String
+  title       String
+  description String  @db.Text
+  location    String?
+
+  startTime DateTime
+  endTime   DateTime
+  isAllDay  Boolean  @default(false)
+
+  // Capacity
+  maxAttendees     Int?
+  currentAttendees Int  @default(0)
+
+  // Ticketing
+  isTicketed  Boolean @default(false)
+  ticketPrice Float?
+  ticketUrl   String?
+
+  // Media
+  coverImage String?
+
+  // Status
+  isCancelled  Boolean @default(false)
+  cancelReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  rsvps    EventRsvp[]
+
+  @@index([businessId])
+  @@index([startTime])
+}
+
+model EventRsvp {
+  id          String    @id @default(cuid())
+  eventId     String
+  userId      String
+  status      String // going, interested, not_going
+  ticketCount Int       @default(1)
+  checkedInAt DateTime?
+  qrCode      String?
+  createdAt   DateTime  @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+// =============================================================================
+// DEALS MODELS
+// =============================================================================
+
+model Deal {
+  id            String   @id @default(cuid())
+  businessId    String
+  title         String
+  description   String   @db.Text
+  dealType      DealType
+  value         Float // Percentage or fixed amount
+  originalPrice Float?
+  specialPrice  Float?
+  conditions    String?  @db.Text
+
+  startDate DateTime
+  endDate   DateTime
+
+  // Flash deal specific
+  isFlashDeal    Boolean   @default(false)
+  flashStartTime DateTime?
+  flashEndTime   DateTime?
+
+  // Loyalty deal specific
+  isLoyaltyDeal Boolean @default(false)
+  loyaltyPoints Int? // Points required
+
+  // Limits
+  isActive           Boolean @default(true)
+  maxRedemptions     Int?
+  perUserLimit       Int?
+  currentRedemptions Int     @default(0)
+
+  code     String?
+  imageUrl String?
+
+  // Featured
+  isFeatured    Boolean   @default(false)
+  featuredUntil DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  redemptions DealRedemption[]
+
+  @@index([businessId, isActive])
+  @@index([endDate])
+  @@index([isFeatured])
+}
+
+model DealRedemption {
+  id         String   @id @default(cuid())
+  dealId     String
+  userId     String
+  redeemedAt DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([userId])
+}
+
+// =============================================================================
+// COMMUNITY MODELS
+// =============================================================================
+
+model CommunityPost {
+  id         String   @id @default(cuid())
+  authorId   String
+  businessId String?
+  channelId  String?
+  title      String   @db.VarChar(200)
+  content    String   @db.Text
+  postType   PostType
+  media      String[]
+  tags       String[]
+
+  // Engagement
   viewCount    Int @default(0)
   likeCount    Int @default(0)
   commentCount Int @default(0)
   shareCount   Int @default(0)
 
-  status      PostStatus @default(PUBLISHED)
-  isPinned    Boolean    @default(false)
-  flagCount   Int        @default(0)
+  // Moderation
+  status    PostStatus @default(PUBLISHED)
+  isPinned  Boolean    @default(false)
+  flagCount Int        @default(0)
+
+  // Sponsored
+  isSponsored Boolean @default(false)
+  sponsorId   String?
+
+  // Poll specific
+  pollOptions Json? // [{id, text, votes}]
+  pollEndsAt  DateTime?
 
   publishedAt DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  author   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  business Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  likes    PostLike[]
-  comments PostComment[]
-  reports  PostReport[]
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  business  Business?         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  channel   CommunityChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  likes     PostLike[]
+  comments  PostComment[]
+  reports   PostReport[]
+  pollVotes PollVote[]
 
   @@index([status, publishedAt])
   @@index([authorId])
   @@index([businessId])
   @@index([postType])
+  @@index([channelId])
+}
+
+model CommunityChannel {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  icon        String?
+  coverImage  String?
+  isOfficial  Boolean  @default(false)
+  isPrivate   Boolean  @default(false)
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  posts      CommunityPost[]
+  moderators ChannelModerator[]
+
+  @@index([slug])
+}
+
+model ChannelModerator {
+  id        String   @id @default(cuid())
+  channelId String
+  userId    String
+  role      String   @default("moderator") // moderator, admin
+  createdAt DateTime @default(now())
+
+  channel CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([channelId])
 }
 
 model PostLike {
@@ -641,10 +1380,10 @@ model PostComment {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  post    CommunityPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent  PostComment?   @relation("CommentReplies", fields: [parentId], references: [id])
-  replies PostComment[]  @relation("CommentReplies")
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  PostComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies PostComment[] @relation("CommentReplies")
   likes   CommentLike[]
 
   @@index([postId, createdAt])
@@ -666,13 +1405,13 @@ model CommentLike {
 }
 
 model PostReport {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   postId     String
   reportedBy String
   reason     String
   details    String?
   status     ReportStatus @default(PENDING)
-  createdAt  DateTime @default(now())
+  createdAt  DateTime     @default(now())
 
   post     CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   reporter User          @relation(fields: [reportedBy], references: [id])
@@ -681,6 +1420,63 @@ model PostReport {
   @@index([status])
 }
 
+model PollVote {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  optionId  String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+// =============================================================================
+// NOTIFICATION MODELS
+// =============================================================================
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String           @db.Text
+  link    String?
+  read    Boolean          @default(false)
+  data    Json?
+
+  // Delivery
+  sentViaEmail Boolean @default(false)
+  sentViaSms   Boolean @default(false)
+  sentViaPush  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model NotificationDigest {
+  id         String    @id @default(cuid())
+  userId     String
+  frequency  String // daily, weekly
+  lastSentAt DateTime?
+  nextSendAt DateTime
+  isEnabled  Boolean   @default(true)
+
+  @@unique([userId])
+}
+
+// =============================================================================
+// ANALYTICS MODELS
+// =============================================================================
+
 model BusinessView {
   id         String     @id @default(cuid())
   businessId String
@@ -688,6 +1484,8 @@ model BusinessView {
   source     ViewSource
   latitude   Float?
   longitude  Float?
+  referrer   String?
+  deviceType String?
   createdAt  DateTime   @default(now())
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -696,6 +1494,120 @@ model BusinessView {
   @@index([businessId, source])
   @@index([createdAt])
 }
+
+model AnalyticsSnapshot {
+  id             String   @id @default(cuid())
+  businessId     String
+  date           DateTime @db.Date
+  views          Int      @default(0)
+  clicks         Int      @default(0)
+  bookings       Int      @default(0)
+  revenue        Float    @default(0)
+  newReviews     Int      @default(0)
+  avgRating      Float?
+  conversionRate Float?
+  demographics   Json? // {ageGroups: {}, locations: {}}
+  createdAt      DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, date])
+  @@index([businessId])
+  @@index([date])
+}
+
+model TrendingSearch {
+  id        String   @id @default(cuid())
+  query     String
+  count     Int      @default(1)
+  category  String?
+  city      String?
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([query, date, city])
+  @@index([date])
+  @@index([count])
+}
+
+// =============================================================================
+// ISLAMIC FEATURES
+// =============================================================================
+
+model PrayerTime {
+  id        String   @id @default(cuid())
+  city      String
+  date      DateTime @db.Date
+  fajr      String
+  sunrise   String
+  dhuhr     String
+  asr       String
+  maghrib   String
+  isha      String
+  hijriDate String?
+  createdAt DateTime @default(now())
+
+  @@unique([city, date])
+  @@index([city, date])
+}
+
+model IslamicEvent {
+  id          String   @id @default(cuid())
+  name        String
+  type        String // eid, ramadan, hajj, etc.
+  startDate   DateTime
+  endDate     DateTime
+  description String?  @db.Text
+  year        Int // Hijri year
+  createdAt   DateTime @default(now())
+
+  @@index([startDate])
+  @@index([type])
+}
+
+model FundraisingCampaign {
+  id              String    @id @default(cuid())
+  businessId      String // Masjid or charity
+  title           String
+  description     String    @db.Text
+  goalAmount      Float
+  currentAmount   Float     @default(0)
+  currency        String    @default("USD")
+  isZakatEligible Boolean   @default(false)
+  isSadaqah       Boolean   @default(false)
+  startDate       DateTime
+  endDate         DateTime?
+  coverImage      String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  donations Donation[]
+
+  @@index([businessId])
+  @@index([isActive])
+}
+
+model Donation {
+  id          String   @id @default(cuid())
+  campaignId  String
+  donorId     String?
+  amount      Float
+  currency    String   @default("USD")
+  isAnonymous Boolean  @default(false)
+  message     String?
+  paymentId   String?
+  createdAt   DateTime @default(now())
+
+  campaign FundraisingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+}
+
+// =============================================================================
+// SCRAPED DATA
+// =============================================================================
 
 model ScrapedBusiness {
   id          String                     @id @default(cuid())
@@ -715,72 +1627,125 @@ model ScrapedBusiness {
   scrapedAt   DateTime                   @default(now())
   claimStatus ScrapedBusinessClaimStatus @default(PENDING_REVIEW)
   reviewedAt  DateTime?
-  metadata    Json? // Stores scraper metadata like confidence, source, etc.
+  reviewedBy  String?
+  metadata    Json?
 
   @@index([claimStatus])
   @@index([scrapedAt])
 }
 
-enum NotificationType {
-  BOOKING_REQUEST
-  BOOKING_CONFIRMED
-  BOOKING_CANCELLED
-  NEW_MESSAGE
-  NEW_REVIEW
-  REVIEW_RESPONSE
-  VERIFICATION_APPROVED
-  VERIFICATION_REJECTED
-  DEAL_EXPIRING
-  SYSTEM_ANNOUNCEMENT
+// =============================================================================
+// MODERATION & APPEALS
+// =============================================================================
+
+model ContentReport {
+  id          String       @id @default(cuid())
+  reporterId  String
+  contentType String // review, post, business, user
+  contentId   String
+  reason      ReportReason
+  details     String?      @db.Text
+  status      ReportStatus @default(PENDING)
+  assignedTo  String?
+  resolvedAt  DateTime?
+  resolution  String?
+  createdAt   DateTime     @default(now())
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([contentType, contentId])
+  @@index([status])
+  @@index([reporterId])
 }
 
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  type      NotificationType
-  title     String
-  message   String           @db.Text
-  link      String?
-  read      Boolean          @default(false)
-  data      Json?
-  createdAt DateTime         @default(now())
+model Appeal {
+  id          String       @id @default(cuid())
+  userId      String
+  contentType String // review, post, business, account
+  contentId   String?
+  reason      String       @db.Text
+  evidence    String[] // URLs to supporting documents
+  status      AppealStatus @default(PENDING)
+  assignedTo  String?
+  resolution  String?      @db.Text
+  resolvedAt  DateTime?
+  createdAt   DateTime     @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, read])
-  @@index([createdAt])
+  @@index([userId])
+  @@index([status])
 }
 
-enum DealType {
-  PERCENTAGE_OFF
-  FIXED_AMOUNT_OFF
-  BUY_ONE_GET_ONE
-  SPECIAL_PRICE
-  FREE_ITEM
+model ModerationRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String // keyword, pattern, ai
+  pattern     String?
+  action      String // flag, hide, delete, notify
+  isActive    Boolean  @default(true)
+  hitCount    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([isActive])
 }
 
-model Deal {
-  id              String    @id @default(cuid())
-  businessId      String
-  title           String
-  description     String    @db.Text
-  dealType        DealType
-  value           Float
-  originalPrice   Float?
-  specialPrice    Float?
-  conditions      String?   @db.Text
-  startDate       DateTime
-  endDate         DateTime
-  isActive        Boolean   @default(true)
-  maxRedemptions  Int?
-  currentRedemptions Int    @default(0)
-  code            String?
-  imageUrl        String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+// =============================================================================
+// REFERRAL SYSTEM
+// =============================================================================
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+model Referral {
+  id           String    @id @default(cuid())
+  referrerId   String
+  referredId   String
+  code         String
+  status       String    @default("pending") // pending, completed, rewarded
+  rewardAmount Float?
+  rewardedAt   DateTime?
+  createdAt    DateTime  @default(now())
 
-  @@index([businessId, isActive])
-  @@index([endDate])
+  referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerId, referredId])
+  @@index([referrerId])
+  @@index([code])
+}
+
+// =============================================================================
+// SYSTEM CONFIGURATION
+// =============================================================================
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isEnabled   Boolean  @default(false)
+  percentage  Int? // For gradual rollout (0-100)
+  userIds     String[] // Specific users
+  metadata    Json?
+  updatedAt   DateTime @updatedAt
+}
+
+model ABTest {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  variants    Json // [{name: "control", weight: 50}, {name: "variant", weight: 50}]
+  metrics     String[] // ["conversion", "engagement"]
+  isActive    Boolean   @default(false)
+  startDate   DateTime?
+  endDate     DateTime?
+  results     Json?
+  createdAt   DateTime  @default(now())
+
+  @@index([isActive])
 }

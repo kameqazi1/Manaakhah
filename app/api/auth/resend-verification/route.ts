@@ -22,6 +22,13 @@ export async function POST(req: Request) {
     // Find user by email
     const user = await db.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        emailVerified: true,
+        lastVerificationEmailSent: true,
+      },
     });
 
     if (!user) {
@@ -37,16 +44,30 @@ export async function POST(req: Request) {
       });
     }
 
+    // Check cooldown (1 minute between resend requests)
+    const COOLDOWN_MS = 60 * 1000; // 1 minute
+    if (user.lastVerificationEmailSent) {
+      const timeSinceLastEmail = Date.now() - user.lastVerificationEmailSent.getTime();
+      if (timeSinceLastEmail < COOLDOWN_MS) {
+        const secondsRemaining = Math.ceil((COOLDOWN_MS - timeSinceLastEmail) / 1000);
+        return NextResponse.json(
+          { error: `Please wait ${secondsRemaining} seconds before requesting another email` },
+          { status: 429 }
+        );
+      }
+    }
+
     // Generate new verification token
     const emailVerificationToken = crypto.randomBytes(32).toString("hex");
     const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Update user with new token
+    // Update user with new token and track last email sent time
     await db.user.update({
       where: { id: user.id },
       data: {
         emailVerificationToken,
         emailVerificationExpires,
+        lastVerificationEmailSent: new Date(),
       },
     });
 
@@ -59,7 +80,7 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }

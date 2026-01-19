@@ -91,6 +91,18 @@ export async function POST(req: Request) {
       },
     });
 
+    // Generate auto-login token (valid for 24h to match verification link)
+    const autoLoginToken = crypto.randomBytes(32).toString("hex");
+    const autoLoginTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        autoLoginToken,
+        autoLoginTokenExpires,
+      },
+    });
+
     // Send verification email
     try {
       await sendVerificationEmail(user.email, user.name || "User", emailVerificationToken);
@@ -104,13 +116,14 @@ export async function POST(req: Request) {
         message: "User created successfully. Please check your email to verify your account.",
         user,
         requiresVerification: true,
+        autoLoginToken, // Frontend stores this for post-verification auto-login
       },
       { status: 201 }
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }

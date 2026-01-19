@@ -25,6 +25,12 @@ export async function POST(req: Request) {
           gt: new Date(),
         },
       },
+      select: {
+        id: true,
+        email: true,
+        autoLoginToken: true,
+        autoLoginTokenExpires: true,
+      },
     });
 
     if (!user) {
@@ -44,13 +50,22 @@ export async function POST(req: Request) {
       },
     });
 
+    // Check if auto-login token is still valid
+    const canAutoLogin = !!(
+      user.autoLoginToken &&
+      user.autoLoginTokenExpires &&
+      user.autoLoginTokenExpires > new Date()
+    );
+
     return NextResponse.json({
-      message: "Email verified successfully. You can now log in.",
+      message: "Email verified successfully.",
+      email: user.email,
+      canAutoLogin,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }

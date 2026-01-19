@@ -108,6 +108,14 @@ enum CommentStatus {
   DELETED
 }
 
+enum ReviewStatus {
+  PUBLISHED
+  PENDING
+  FLAGGED
+  HIDDEN
+  DELETED
+}
+
 enum ReportReason {
   SPAM
   FAKE
@@ -162,6 +170,14 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // Email verification
+  emailVerificationToken   String?   @unique
+  emailVerificationExpires DateTime?
+
+  // Password reset
+  passwordResetToken       String?   @unique
+  passwordResetExpires     DateTime?
 
   businesses           Business[]
   reviews              Review[]

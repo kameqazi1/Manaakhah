@@ -3,6 +3,8 @@ import { db, isMockMode } from "@/lib/db";
 import { mockRegister } from "@/lib/mock-auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import crypto from "crypto";
+import { sendVerificationEmail } from "@/lib/email";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
       try {
         const user = mockRegister({
           email: validatedData.email,
-          password: validatedData.password, // Mock mode: no hashing needed
+          password: validatedData.password,
           name: validatedData.name,
           phone: validatedData.phone,
           role: validatedData.role,
@@ -63,19 +65,22 @@ export async function POST(req: Request) {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    const hashedPassword = await bcrypt.hash(validatedData.password, 12);
 
-    // Check if email contains "admin" for auto-admin role
-    const isAdmin = validatedData.email.toLowerCase().includes("admin");
+    // Generate email verification token
+    const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+    const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create user
+    // Create user (always use the role from validated data, never auto-assign admin)
     const user = await db.user.create({
       data: {
         email: validatedData.email,
         password: hashedPassword,
         name: validatedData.name,
         phone: validatedData.phone,
-        role: isAdmin ? "ADMIN" : validatedData.role,
+        role: validatedData.role, // Only CONSUMER or BUSINESS_OWNER allowed from schema
+        emailVerificationToken,
+        emailVerificationExpires,
       },
       select: {
         id: true,
@@ -86,10 +91,19 @@ export async function POST(req: Request) {
       },
     });
 
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, user.name || "User", emailVerificationToken);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+      // Don't fail registration if email fails, user can request resend
+    }
+
     return NextResponse.json(
       {
-        message: "User created successfully",
+        message: "User created successfully. Please check your email to verify your account.",
         user,
+        requiresVerification: true,
       },
       { status: 201 }
     );

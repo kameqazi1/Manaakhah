@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       const businesses = await db.business.findMany({
         where: { ownerId: userId },
       });
-      const businessIds = businesses.map((b) => b.id);
+      const businessIds = businesses.map((b: any) => b.id);
 
       if (businessIds.length === 0) {
         return NextResponse.json({ conversations: [], unreadTotal: 0 });
@@ -45,20 +45,20 @@ export async function GET(req: Request) {
         },
       });
 
-      const filteredConversations = allConversations.filter((c) =>
+      const filteredConversations = allConversations.filter((c: any) =>
         businessIds.includes(c.businessId)
       );
 
       // Calculate unread count
       const unreadTotal = filteredConversations.reduce(
-        (sum, c) => sum + c.unreadByBusiness,
+        (sum: number, c: any) => sum + c.unreadByBusiness,
         0
       );
 
       // Get last message for each conversation
-      const conversationsWithLastMessage = filteredConversations.map((conv) => {
+      const conversationsWithLastMessage = filteredConversations.map((conv: any) => {
         const messages = conv.messages.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
         const lastMessage = messages[0];
 
@@ -98,14 +98,14 @@ export async function GET(req: Request) {
     });
 
     // Calculate unread total
-    const unreadTotal = conversations.reduce((sum, c) => {
+    const unreadTotal = conversations.reduce((sum: number, c: any) => {
       return sum + (c.customerId === userId ? c.unreadByCustomer : c.unreadByBusiness);
     }, 0);
 
     // Format conversations with last message
-    const formattedConversations = conversations.map((conv) => {
+    const formattedConversations = conversations.map((conv: any) => {
       const messages = conv.messages.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       const lastMessage = messages[0];
 

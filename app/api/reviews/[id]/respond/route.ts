@@ -4,9 +4,10 @@ import { db, isMockMode } from "@/lib/db";
 // POST /api/reviews/:id/respond - Business owner responds to review
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     let userId: string | null = null;
     let userRole: string | null = null;
 
@@ -33,7 +34,7 @@ export async function POST(
       );
     }
 
-    const reviewId = params.id;
+    const reviewId = id;
 
     // Get the review
     const reviews = await db.review.findMany({

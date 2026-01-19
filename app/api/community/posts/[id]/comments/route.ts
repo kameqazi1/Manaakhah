@@ -4,10 +4,11 @@ import { db, isMockMode } from "@/lib/db";
 // GET /api/community/posts/:id/comments - Get comments for a post
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const postId = params.id;
+    const { id } = await params;
+    const postId = id;
 
     // Get all comments for this post
     const allComments = await db.postComment.findMany({
@@ -23,12 +24,12 @@ export async function GET(
     const rootComments: any[] = [];
 
     // First pass: create map of all comments
-    allComments.forEach((comment) => {
+    allComments.forEach((comment: any) => {
       commentMap.set(comment.id, { ...comment, replies: [] });
     });
 
     // Second pass: build tree structure
-    allComments.forEach((comment) => {
+    allComments.forEach((comment: any) => {
       const commentWithReplies = commentMap.get(comment.id);
       if (comment.parentId) {
         const parent = commentMap.get(comment.parentId);
@@ -50,9 +51,10 @@ export async function GET(
 // POST /api/community/posts/:id/comments - Create a new comment
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     let userId: string | null = null;
 
     if (isMockMode()) {
@@ -63,7 +65,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const postId = params.id;
+    const postId = id;
     const body = await req.json();
     const { content, parentId } = body;
 

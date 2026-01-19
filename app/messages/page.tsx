@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMockSession } from "@/components/mock-session-provider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +46,7 @@ interface Message {
   };
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const { data: session } = useMockSession();
   const searchParams = useSearchParams();
   const toUserId = searchParams.get("to");
@@ -542,5 +542,20 @@ export default function MessagesPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading messages...</p>
+        </div>
+      </div>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }

@@ -35,8 +35,8 @@ const createBusinessSchema = z.object({
   website: z.string().url().optional().or(z.literal("")),
   services: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
-  hours: z.record(z.any()).optional(),
-  prayerTimes: z.record(z.any()).optional(),
+  hours: z.record(z.string(), z.any()).optional(),
+  prayerTimes: z.record(z.string(), z.any()).optional(),
   jummahTime: z.string().optional(),
   aidServices: z.array(z.string()).default([]),
   externalUrl: z.string().url().optional().or(z.literal("")),
@@ -129,10 +129,10 @@ export async function GET(req: Request) {
     });
 
     // Calculate average rating and distance for each business
-    let businessesWithRating = businesses.map((business) => {
+    let businessesWithRating = businesses.map((business: any) => {
       const avgRating =
         business.reviews.length > 0
-          ? business.reviews.reduce((sum, r) => sum + r.rating, 0) /
+          ? business.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
             business.reviews.length
           : 0;
 
@@ -160,13 +160,13 @@ export async function GET(req: Request) {
     if (lat && lng && radius) {
       const maxRadius = parseFloat(radius);
       businessesWithRating = businessesWithRating.filter(
-        (b) => !b.distance || b.distance <= maxRadius
+        (b: any) => !b.distance || b.distance <= maxRadius
       );
     }
 
     // Sort by distance if location provided
     if (lat && lng) {
-      businessesWithRating.sort((a, b) => {
+      businessesWithRating.sort((a: any, b: any) => {
         const distA = a.distance || Infinity;
         const distB = b.distance || Infinity;
         return distA - distB;
@@ -280,7 +280,7 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validation error", details: error.errors },
+        { error: "Validation error", details: error.issues },
         { status: 400 }
       );
     }

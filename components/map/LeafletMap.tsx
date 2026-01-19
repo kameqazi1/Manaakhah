@@ -272,7 +272,7 @@ export default function LeafletMap({
       });
 
       // Add hover effect
-      marker.on("mouseover", function () {
+      marker.on("mouseover", function (this: L.Marker) {
         const markerEl = this.getElement();
         markerEl?.querySelector(".marker-inner")?.setAttribute(
           "style",
@@ -311,7 +311,7 @@ export default function LeafletMap({
         );
       });
 
-      marker.on("mouseout", function () {
+      marker.on("mouseout", function (this: L.Marker) {
         const markerEl = this.getElement();
         markerEl?.querySelector(".marker-inner")?.setAttribute(
           "style",

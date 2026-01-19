@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       const businesses = await db.business.findMany({
         where: { ownerId: userId },
       });
-      const businessIds = businesses.map((b) => b.id);
+      const businessIds = businesses.map((b: any) => b.id);
 
       if (businessIds.length === 0) {
         return NextResponse.json({ bookings: [] });
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         orderBy: { appointmentDate: "desc" },
       });
 
-      const filteredBookings = allBookings.filter((b) => businessIds.includes(b.businessId));
+      const filteredBookings = allBookings.filter((b: any) => businessIds.includes(b.businessId));
 
       return NextResponse.json({ bookings: filteredBookings });
     }
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
       });
 
       const futureBookings = allBookings.filter(
-        (b) => new Date(b.appointmentDate) > new Date()
+        (b: any) => new Date(b.appointmentDate) > new Date()
       );
 
       return NextResponse.json({ bookings: futureBookings });

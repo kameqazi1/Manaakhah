@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, BusinessTag } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -193,12 +193,12 @@ async function main() {
     });
 
     // Add tags for each business
-    const tags = ["MUSLIM_OWNED" as const];
+    const tags: BusinessTag[] = [BusinessTag.MUSLIM_OWNED];
     if (businessData.category === "HALAL_FOOD") {
-      tags.push("HALAL_VERIFIED" as const);
+      tags.push(BusinessTag.HALAL_VERIFIED);
     }
     if (businessData.category === "HEALTH_WELLNESS") {
-      tags.push("SISTERS_FRIENDLY" as const);
+      tags.push(BusinessTag.SISTERS_FRIENDLY);
     }
 
     for (const tag of tags) {
@@ -224,26 +224,28 @@ async function main() {
   const sampleBusinesses = await prisma.business.findMany({ take: 3 });
 
   for (const business of sampleBusinesses) {
-    await prisma.review.upsert({
+    // Check if review already exists
+    const existingReview = await prisma.review.findFirst({
       where: {
-        businessId_userId_bookingId: {
-          businessId: business.id,
-          userId: consumer.id,
-          bookingId: null,
-        },
-      },
-      update: {},
-      create: {
         businessId: business.id,
         userId: consumer.id,
-        rating: 5,
-        title: "Excellent service!",
-        content: "Had a wonderful experience. Highly recommend to the community!",
-        status: "PUBLISHED",
-        isVerified: true,
-        verifiedAt: new Date(),
       },
     });
+
+    if (!existingReview) {
+      await prisma.review.create({
+        data: {
+          businessId: business.id,
+          userId: consumer.id,
+          rating: 5,
+          title: "Excellent service!",
+          content: "Had a wonderful experience. Highly recommend to the community!",
+          status: "PUBLISHED",
+          isVerified: true,
+          verifiedAt: new Date(),
+        },
+      });
+    }
   }
   console.log("✅ Created sample reviews");
 

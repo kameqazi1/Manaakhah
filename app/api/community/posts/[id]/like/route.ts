@@ -4,9 +4,10 @@ import { db, isMockMode } from "@/lib/db";
 // POST /api/community/posts/:id/like - Toggle like on a post
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     let userId: string | null = null;
 
     if (isMockMode()) {
@@ -17,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const postId = params.id;
+    const postId = id;
 
     // Check if post exists
     const posts = await db.communityPost.findMany({

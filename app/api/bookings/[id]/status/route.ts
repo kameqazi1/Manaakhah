@@ -4,7 +4,7 @@ import { db, isMockMode } from "@/lib/db";
 // PUT /api/bookings/:id/status - Update booking status
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     let userId: string | null = null;
@@ -26,7 +26,7 @@ export async function PUT(
       return NextResponse.json({ error: "Status is required" }, { status: 400 });
     }
 
-    const bookingId = params.id;
+    const { id: bookingId } = await params;
 
     // Get the booking
     const bookings = await db.booking.findMany({

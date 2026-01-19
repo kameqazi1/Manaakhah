@@ -4,9 +4,10 @@ import { db, isMockMode } from "@/lib/db";
 // POST /api/reviews/:id/helpful - Toggle helpful vote
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     let userId: string | null = null;
 
     if (isMockMode()) {
@@ -17,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reviewId = params.id;
+    const reviewId = id;
 
     // In mock mode, we'll simulate the helpful vote by updating the helpfulCount
     if (isMockMode()) {

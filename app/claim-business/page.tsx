@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ const VERIFICATION_METHODS = [
   },
 ];
 
-export default function ClaimBusinessPage() {
+function ClaimBusinessContent() {
   const { data: session } = useMockSession();
   const searchParams = useSearchParams();
   const businessId = searchParams.get("business");
@@ -524,5 +524,20 @@ export default function ClaimBusinessPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function ClaimBusinessPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ClaimBusinessContent />
+    </Suspense>
   );
 }

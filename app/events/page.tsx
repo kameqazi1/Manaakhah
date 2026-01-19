@@ -289,7 +289,7 @@ export default function EventsPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {upcomingEvents.map((event) => {
                     const typeInfo = getEventTypeInfo(event.eventType);
-                    const isFull = event.maxAttendees && event.attendeeCount >= event.maxAttendees;
+                    const isFull = event.maxAttendees ? event.attendeeCount >= event.maxAttendees : false;
 
                     return (
                       <Card key={event.id} className="overflow-hidden">

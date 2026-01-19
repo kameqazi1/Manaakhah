@@ -4,11 +4,12 @@ import { db, isMockMode } from "@/lib/db";
 // GET /api/businesses/[id] - Get single business
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const business = await db.business.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         owner: {
           select: {
@@ -60,7 +61,7 @@ export async function GET(
     // Calculate average rating
     const avgRating =
       business.reviews.length > 0
-        ? business.reviews.reduce((sum, r) => sum + r.rating, 0) /
+        ? business.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
           business.reviews.length
         : 0;
 
@@ -81,9 +82,10 @@ export async function GET(
 // PUT /api/businesses/[id] - Update business
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Get session based on mode
     let session: any = null;
 
@@ -106,7 +108,7 @@ export async function PUT(
     }
 
     const business = await db.business.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!business) {
@@ -130,7 +132,7 @@ export async function PUT(
     const { tags, ...updateData } = body;
 
     const updatedBusiness = await db.business.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
@@ -140,14 +142,14 @@ export async function PUT(
       // Skip tag relations in mock mode
       if (!isMockMode()) {
         await db.businessTagRelation.deleteMany({
-          where: { businessId: params.id },
+          where: { businessId: id },
         });
 
         // Create new tags
         if (tags.length > 0) {
           await db.businessTagRelation.createMany({
             data: tags.map((tag: string) => ({
-              businessId: params.id,
+              businessId: id,
               tag: tag as any,
             })),
           });
@@ -168,9 +170,10 @@ export async function PUT(
 // DELETE /api/businesses/[id] - Delete business
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Get session based on mode
     let session: any = null;
 
@@ -193,7 +196,7 @@ export async function DELETE(
     }
 
     const business = await db.business.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!business) {
@@ -212,7 +215,7 @@ export async function DELETE(
     }
 
     await db.business.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Business deleted successfully" });

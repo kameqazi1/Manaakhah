@@ -8,7 +8,10 @@ export async function GET(req: Request) {
     const businessId = searchParams.get("businessId");
     const rating = searchParams.get("rating");
     const verified = searchParams.get("verified");
+    const verifiedBooking = searchParams.get("verifiedBooking");
     const sortBy = searchParams.get("sortBy") || "newest";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
 
     if (!businessId) {
       return NextResponse.json({ error: "businessId is required" }, { status: 400 });
@@ -21,49 +24,157 @@ export async function GET(req: Request) {
 
     if (rating) where.rating = parseInt(rating);
     if (verified === "true") where.isVerified = true;
+    if (verifiedBooking === "true") where.isVerifiedBooking = true;
 
-    const orderBy: any = {};
-    if (sortBy === "newest") orderBy.createdAt = "desc";
-    if (sortBy === "oldest") orderBy.createdAt = "asc";
-    if (sortBy === "highest") orderBy.rating = "desc";
-    if (sortBy === "lowest") orderBy.rating = "asc";
-    if (sortBy === "helpful") orderBy.helpfulCount = "desc";
+    const orderBy: any = [];
+    // Always prioritize verified booking reviews
+    orderBy.push({ isVerifiedBooking: "desc" });
 
-    const reviews = await db.review.findMany({
-      where,
-      include: {
-        user: true,
-      },
-      orderBy,
-    });
+    if (sortBy === "newest") orderBy.push({ createdAt: "desc" });
+    if (sortBy === "oldest") orderBy.push({ createdAt: "asc" });
+    if (sortBy === "highest") orderBy.push({ rating: "desc" });
+    if (sortBy === "lowest") orderBy.push({ rating: "asc" });
+    if (sortBy === "helpful") orderBy.push({ helpfulCount: "desc" });
+
+    const [reviews, total] = await Promise.all([
+      db.review.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              isVerifiedReviewer: true,
+              reviewCount: true,
+              helpfulVoteCount: true,
+            },
+          },
+          reviewPhotos: true,
+          helpfulVotes: {
+            select: { userId: true },
+          },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.review.count({ where }),
+    ]);
 
     // Calculate stats
     const allReviews = await db.review.findMany({
       where: { businessId, status: "PUBLISHED" },
+      select: { rating: true, isVerified: true, isVerifiedBooking: true, sentimentScore: true },
+    });
+
+    // Calculate sentiment distribution
+    const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
+    allReviews.forEach((r: any) => {
+      if (r.sentimentScore !== null) {
+        if (r.sentimentScore > 0.2) sentimentCounts.positive++;
+        else if (r.sentimentScore < -0.2) sentimentCounts.negative++;
+        else sentimentCounts.neutral++;
+      }
     });
 
     const stats = {
       averageRating: allReviews.length > 0
-        ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
+        ? allReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / allReviews.length
         : 0,
       totalReviews: allReviews.length,
       breakdown: {
-        5: allReviews.filter((r) => r.rating === 5).length,
-        4: allReviews.filter((r) => r.rating === 4).length,
-        3: allReviews.filter((r) => r.rating === 3).length,
-        2: allReviews.filter((r) => r.rating === 2).length,
-        1: allReviews.filter((r) => r.rating === 1).length,
+        5: allReviews.filter((r: any) => r.rating === 5).length,
+        4: allReviews.filter((r: any) => r.rating === 4).length,
+        3: allReviews.filter((r: any) => r.rating === 3).length,
+        2: allReviews.filter((r: any) => r.rating === 2).length,
+        1: allReviews.filter((r: any) => r.rating === 1).length,
       },
       verifiedPercentage: allReviews.length > 0
-        ? Math.round((allReviews.filter((r) => r.isVerified).length / allReviews.length) * 100)
+        ? Math.round((allReviews.filter((r: any) => r.isVerified).length / allReviews.length) * 100)
         : 0,
+      verifiedBookingPercentage: allReviews.length > 0
+        ? Math.round((allReviews.filter((r: any) => r.isVerifiedBooking).length / allReviews.length) * 100)
+        : 0,
+      sentiment: sentimentCounts,
     };
 
-    return NextResponse.json({ reviews, stats });
+    // Get AI summary if available
+    const business = await db.business.findUnique({
+      where: { id: businessId },
+      select: { sentimentScore: true },
+    });
+
+    return NextResponse.json({
+      reviews: reviews.map((r: any) => ({
+        ...r,
+        hasUserVoted: false, // Will be set by client based on userId
+      })),
+      stats,
+      aiSummary: business?.sentimentScore !== null
+        ? generateAISummary(allReviews, stats)
+        : null,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching reviews:", error);
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
   }
+}
+
+/**
+ * Generate an AI-like summary of reviews
+ * In production, this would use an actual AI model
+ */
+function generateAISummary(
+  reviews: { rating: number; sentimentScore: number | null }[],
+  stats: any
+): {
+  summary: string;
+  highlights: string[];
+  improvements: string[];
+} {
+  const avgRating = stats.averageRating;
+  const total = stats.totalReviews;
+  const verifiedPct = stats.verifiedBookingPercentage;
+
+  let summary = "";
+  if (avgRating >= 4.5) {
+    summary = `Highly rated with an excellent ${avgRating.toFixed(1)}/5 rating based on ${total} reviews.`;
+  } else if (avgRating >= 4.0) {
+    summary = `Well-regarded with a solid ${avgRating.toFixed(1)}/5 rating from ${total} customers.`;
+  } else if (avgRating >= 3.5) {
+    summary = `Generally positive reception with a ${avgRating.toFixed(1)}/5 average across ${total} reviews.`;
+  } else {
+    summary = `Mixed reviews with a ${avgRating.toFixed(1)}/5 rating from ${total} customers.`;
+  }
+
+  if (verifiedPct > 50) {
+    summary += ` ${verifiedPct}% of reviews are from verified bookings.`;
+  }
+
+  // In a real implementation, these would be extracted from review text using NLP
+  const highlights = [];
+  const improvements = [];
+
+  if (avgRating >= 4.0) {
+    highlights.push("Consistently high quality service");
+    highlights.push("Customers appreciate the attention to detail");
+  }
+  if (stats.breakdown[5] > stats.breakdown[4]) {
+    highlights.push("Strong majority of 5-star reviews");
+  }
+
+  if (stats.breakdown[1] + stats.breakdown[2] > total * 0.1) {
+    improvements.push("Some customers reported areas for improvement");
+  }
+
+  return { summary, highlights, improvements };
 }
 
 // POST /api/reviews - Create a new review

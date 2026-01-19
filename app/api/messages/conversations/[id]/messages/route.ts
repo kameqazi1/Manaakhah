@@ -4,9 +4,10 @@ import { db, isMockMode } from "@/lib/db";
 // GET /api/messages/conversations/:id/messages - Get messages for a conversation
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     let userId: string | null = null;
 
     if (isMockMode()) {
@@ -17,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const conversationId = params.id;
+    const conversationId = id;
 
     // Get conversation
     const conversation = await db.conversation.findUnique({
@@ -49,8 +50,8 @@ export async function GET(
 
     // Get users for sender info
     const users = await db.user.findMany();
-    const messagesWithSender = messages.map((msg) => {
-      const sender = users.find((u) => u.id === msg.senderId);
+    const messagesWithSender = messages.map((msg: any) => {
+      const sender = users.find((u: any) => u.id === msg.senderId);
       return {
         ...msg,
         sender: sender
@@ -83,9 +84,10 @@ export async function GET(
 // POST /api/messages/conversations/:id/messages - Send a message
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     let userId: string | null = null;
 
     if (isMockMode()) {
@@ -110,7 +112,7 @@ export async function POST(
       );
     }
 
-    const conversationId = params.id;
+    const conversationId = id;
 
     // Verify user is part of conversation
     const conversation = await db.conversation.findUnique({

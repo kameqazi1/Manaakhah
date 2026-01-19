@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users can find and connect with verified Muslim-owned businesses in their area
-**Current focus:** Phase 4 - Missing Email Features (In Progress)
+**Current focus:** Milestone Complete
 
 ## Current State
 
 **Milestone:** Fix Auth & Security
 **Phase:** 4 of 4 (Missing Email Features)
-**Plan:** 1 of 1 (Complete)
-**Status:** Phase 4 Complete
+**Plan:** 2 of 2 (Complete)
+**Status:** Milestone Complete
 
 Progress: [========================] 100% (4 of 4 phases complete)
 
@@ -23,7 +23,7 @@ Progress: [========================] 100% (4 of 4 phases complete)
 | 1 - Mock Mode Auth Fix | Complete | 1/1 |
 | 2 - Production Auth Flows | Complete | 2/2 |
 | 3 - Security Fixes | Complete | 2/2 |
-| 4 - Missing Email Features | Complete | 1/1 |
+| 4 - Missing Email Features | Complete | 2/2 |
 
 ## Accumulated Decisions
 
@@ -45,6 +45,8 @@ Progress: [========================] 100% (4 of 4 phases complete)
 | 04-01 | Store 2FA codes in database with expiry | Server-side verification required for security |
 | 04-01 | 10-minute code expiration | Industry standard for 2FA codes |
 | 04-01 | 60-second cooldown between sends | Prevents spam, matches Phase 2 pattern |
+| 04-02 | Email failure doesn't fail staff invitation | Record created even if email fails, failure logged |
+| 04-02 | SMS 2FA fully removed from codebase | Keep codebase clean - not in UI, not in API, not in types |
 
 ## Session Log
 
@@ -60,11 +62,12 @@ Progress: [========================] 100% (4 of 4 phases complete)
 | 2026-01-19 | Phase 3 Plan 2 executed | 3 tasks, 3 commits, safe OAuth account linking |
 | 2026-01-19 | Phase 3 Plan 1 executed | 2 tasks, 2 commits, env validation + mock header protection |
 | 2026-01-19 | Phase 4 Plan 1 executed | 3 tasks, 3 commits, 2FA email delivery complete |
+| 2026-01-19 | Phase 4 Plan 2 executed | 3 tasks, 3 commits, staff invitation emails + SMS removal |
 
 ## Session Continuity
 
-**Last session:** 2026-01-19T22:15:53Z
-**Stopped at:** Completed 04-01-PLAN.md (Milestone Complete)
+**Last session:** 2026-01-19T22:19:49Z
+**Stopped at:** Completed 04-02-PLAN.md (Milestone Complete)
 **Resume file:** None
 
 ## Milestone Complete
@@ -75,7 +78,7 @@ All 4 phases executed successfully:
 - Phase 1: Mock mode auth fully functional
 - Phase 2: Production auth flows (verify-email, reset-password, auto sign-in)
 - Phase 3: Security fixes (env validation, mock header protection, safe OAuth linking)
-- Phase 4: Missing email features (2FA email delivery)
+- Phase 4: Missing email features (2FA email delivery, staff invitations, SMS cleanup)
 
 ### Requirements Satisfied
 
@@ -88,6 +91,8 @@ All 4 phases executed successfully:
 | SEC-02 | Mock header protection | Complete |
 | SEC-03 | Safe OAuth account linking | Complete |
 | FEAT-01 | 2FA email delivery | Complete |
+| FEAT-02 | SMS 2FA decision (removed) | Complete |
+| FEAT-03 | Staff invitation emails | Complete |
 
 ---
 *State updated: 2026-01-19*

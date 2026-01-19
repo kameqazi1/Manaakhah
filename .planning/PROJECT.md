@@ -14,6 +14,18 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 **Codebase:** 41,848 lines of TypeScript across ~90 routes
 **Tech stack:** Next.js 16, NextAuth v5, Prisma, Resend, PostgreSQL
 
+## Current Milestone: v1.1 Map Overhaul
+
+**Goal:** Replace Leaflet with MapLibre GL JS and build a map-first browsing experience
+
+**Target features:**
+- Migrate from Leaflet to MapLibre GL JS (WebGL rendering, vector tiles)
+- Bidirectional search-map integration (search updates map, map updates results)
+- User location with "you are here" marker and distance filtering
+- Marker clustering for performance with many businesses
+- Better mobile gestures (pinch-to-zoom, smooth pan)
+- Map on homepage, search page, and dedicated /map exploration page
+
 ## Requirements
 
 ### Validated
@@ -42,7 +54,14 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 
 <!-- Current scope. Building toward these. -->
 
-(No active requirements — milestone complete, define next milestone)
+- [ ] **MAP-01**: Replace Leaflet with MapLibre GL JS for WebGL rendering
+- [ ] **MAP-02**: Implement marker clustering for performance with many businesses
+- [ ] **MAP-03**: Search results update map view (zoom to fit results)
+- [ ] **MAP-04**: Map drag/zoom updates search results to visible area
+- [ ] **MAP-05**: Show user's current location on map with distance filtering
+- [ ] **MAP-06**: Add map view toggle to search results page
+- [ ] **MAP-07**: Create dedicated /map page for full-screen exploration
+- [ ] **MAP-08**: Mobile-optimized gestures (pinch-zoom, smooth pan, touch targets)
 
 ### Out of Scope
 
@@ -66,6 +85,7 @@ v1 shipped complete authentication with both modes working. Environment validati
 **Known limitations:**
 - 2FA login challenge flow incomplete (backend throws error, no UI to catch it)
 - Production login page uses API route instead of NextAuth signIn directly
+- Current map uses Leaflet (DOM-based) — slow with many markers, no vector tiles
 
 ## Constraints
 
@@ -90,4 +110,4 @@ v1 shipped complete authentication with both modes working. Environment validati
 | Log but don't block mock headers | Security through obscurity | Good |
 
 ---
-*Last updated: 2026-01-19 after v1 milestone completion*
+*Last updated: 2026-01-19 after v1.1 milestone definition*

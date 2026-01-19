@@ -22,9 +22,9 @@ Requirements for this work phase. Each maps to roadmap phases.
 
 ### Security
 
-- [ ] **SEC-01**: Remove `allowDangerousEmailAccountLinking` from OAuth config
-- [ ] **SEC-02**: Environment variables validated at app startup
-- [ ] **SEC-03**: Mock auth headers (`x-user-id`, `x-user-role`) only work when `USE_MOCK_DATA=true`
+- [x] **SEC-01**: Remove `allowDangerousEmailAccountLinking` from OAuth config
+- [x] **SEC-02**: Environment variables validated at app startup
+- [x] **SEC-03**: Mock auth headers (`x-user-id`, `x-user-role`) only work when `USE_MOCK_DATA=true`
 
 ### Missing Functionality
 
@@ -76,9 +76,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | AUTH-05 | Phase 2 | Complete |
 | AUTH-06 | Phase 2 | Complete |
 | AUTH-07 | Phase 2 | Complete |
-| SEC-01 | Phase 3 | Pending |
-| SEC-02 | Phase 3 | Pending |
-| SEC-03 | Phase 3 | Pending |
+| SEC-01 | Phase 3 | Complete |
+| SEC-02 | Phase 3 | Complete |
+| SEC-03 | Phase 3 | Complete |
 | FEAT-01 | Phase 4 | Pending |
 | FEAT-02 | Phase 4 | Pending |
 | FEAT-03 | Phase 4 | Pending |
@@ -90,4 +90,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after Phase 2 completion*
+*Last updated: 2026-01-19 after Phase 3 completion*

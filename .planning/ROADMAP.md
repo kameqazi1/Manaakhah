@@ -9,7 +9,7 @@
 |-------|------|--------|--------------|
 | 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
 | 2 | Production Auth Flows | Complete | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
-| 3 | Security Fixes | Planned | SEC-01, SEC-02, SEC-03 |
+| 3 | Security Fixes | Complete | SEC-01, SEC-02, SEC-03 |
 | 4 | Missing Email Features | Pending | FEAT-01, FEAT-02, FEAT-03 |
 
 ## Phase 1: Mock Mode Auth Fix
@@ -101,13 +101,15 @@ Security issues identified in codebase audit. Must be fixed before any public or
 **Plans:** 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md - Environment validation and mock header protection (SEC-02, SEC-03)
-- [ ] 03-02-PLAN.md - Safe OAuth account linking flow (SEC-01)
+- [x] 03-01-PLAN.md - Environment validation and mock header protection (SEC-02, SEC-03)
+- [x] 03-02-PLAN.md - Safe OAuth account linking flow (SEC-01)
 
 **Success criteria:**
-- [ ] `allowDangerousEmailAccountLinking` removed or properly secured
-- [ ] App fails fast with clear error if required env vars missing
-- [ ] Mock auth headers logged when sent outside mock mode
+- [x] `allowDangerousEmailAccountLinking` removed or properly secured
+- [x] App fails fast with clear error if required env vars missing
+- [x] Mock auth headers logged when sent outside mock mode
+
+**Completed:** 2026-01-19
 
 ---
 

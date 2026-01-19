@@ -1,4 +1,14 @@
-# Requirements: Manaakhah
+# Requirements Archive: v1 Fix Auth & Security
+
+**Archived:** 2026-01-19
+**Status:** SHIPPED
+
+This is the archived requirements specification for v1.
+For current requirements, see `.planning/REQUIREMENTS.md` (created for next milestone).
+
+---
+
+# Requirements: Manaakhah v1
 
 **Defined:** 2026-01-19
 **Core Value:** Users can find and connect with verified Muslim-owned businesses in their area
@@ -32,39 +42,6 @@ Requirements for this work phase. Each maps to roadmap phases.
 - [x] **FEAT-02**: 2FA codes sent via SMS (or remove SMS option if not implementing)
 - [x] **FEAT-03**: Staff invitation emails sent when adding staff to business
 
-## v2 Requirements
-
-Deferred to future release. Tracked but not in current roadmap.
-
-### Production Hardening
-
-- **PROD-01**: Rate limiting on all API routes
-- **PROD-02**: CSRF token validation on state-changing operations
-- **PROD-03**: Input sanitization beyond Zod validation
-- **PROD-04**: Structured logging with PII redaction
-
-### Testing
-
-- **TEST-01**: Unit tests for auth flows
-- **TEST-02**: Integration tests for API routes
-- **TEST-03**: E2E tests for critical user journeys
-
-### Code Quality
-
-- **QUAL-01**: Replace `any` types with proper TypeScript interfaces
-- **QUAL-02**: Break up large components (>500 lines)
-- **QUAL-03**: Extract duplicated Haversine calculation to shared utility
-
-## Out of Scope
-
-| Feature | Reason |
-|---------|--------|
-| OAuth login (Google/Apple) | Adds complexity, email/password sufficient for demo |
-| Real-time features | Not core to business discovery |
-| Mobile app | Web-first approach |
-| Payment processing | Not needed for directory |
-| Full test coverage | After auth works |
-
 ## Traceability
 
 | Requirement | Phase | Status |
@@ -85,9 +62,28 @@ Deferred to future release. Tracked but not in current roadmap.
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 13
+- Shipped: 13
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after Phase 4 completion (Milestone Complete)*
+
+## Milestone Summary
+
+**Shipped:** 13 of 13 v1 requirements
+
+**Adjusted:**
+- FEAT-02 (SMS 2FA): Changed from "implement SMS" to "remove SMS option" - Decision made during Phase 4 research that SMS adds cost/complexity without being in the UI.
+
+**Dropped:** None
+
+**Deferred to v2:**
+- PROD-01: Rate limiting on all API routes
+- PROD-02: CSRF token validation
+- PROD-03: Input sanitization beyond Zod
+- PROD-04: Structured logging with PII redaction
+- TEST-01/02/03: Unit, integration, and E2E tests
+- QUAL-01/02/03: Code quality improvements
+- FEAT-04 (New): 2FA login challenge UI (identified during milestone audit)
+
+---
+*Archived: 2026-01-19 as part of v1 milestone completion*

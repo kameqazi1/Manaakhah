@@ -2,11 +2,17 @@
 
 ## What This Is
 
-A Muslim business directory and community platform helping users discover halal restaurants, Islamic services, and Muslim-owned businesses. It provides business search with map views, community features (posts, events, messaging), booking system, and business owner tools.
+A Muslim business directory and community platform helping users discover halal restaurants, Islamic services, and Muslim-owned businesses. Features include business search with map views, community features (posts, events, messaging), booking system, business owner tools, and complete authentication system with mock mode support.
 
 ## Core Value
 
 Users can find and connect with verified Muslim-owned businesses in their area.
+
+## Current State
+
+**Shipped:** v1 Fix Auth & Security (2026-01-19)
+**Codebase:** 41,848 lines of TypeScript across ~90 routes
+**Tech stack:** Next.js 16, NextAuth v5, Prisma, Resend, PostgreSQL
 
 ## Requirements
 
@@ -23,20 +29,20 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 - Admin moderation and analytics dashboard
 - Internationalization (English, Arabic, Urdu)
 - Mock data mode for development without database
+- Mock mode auth with client-side registration and sessionStorage — v1
+- Email verification flow with auto sign-in — v1
+- Password reset flow with auto sign-in — v1
+- Type-safe environment validation at build time — v1
+- Mock header protection middleware — v1
+- Safe OAuth account linking with email verification — v1
+- 2FA email delivery with real codes — v1
+- Staff invitation emails with branded templates — v1
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] **AUTH-01**: User can register and sign in with newly created credentials (mock mode)
-- [ ] **AUTH-02**: User can sign in and session persists properly (mock mode)
-- [ ] **AUTH-03**: Email verification flow works end-to-end (production mode)
-- [ ] **AUTH-04**: Password reset flow sends email and works (production mode)
-- [ ] **SEC-01**: Remove `allowDangerousEmailAccountLinking` security risk
-- [ ] **SEC-02**: Validate environment variables at startup
-- [ ] **SEC-03**: Ensure mock auth headers only work in mock mode
-- [ ] **FEAT-01**: 2FA email/SMS actually sends codes (not just console.log)
-- [ ] **FEAT-02**: Staff invitation emails are sent
+(No active requirements — milestone complete, define next milestone)
 
 ### Out of Scope
 
@@ -46,30 +52,26 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 - Real-time chat — High complexity, not core to business discovery
 - Mobile app — Web-first for demo
 - Payment processing — Not needed for directory functionality
-- Full test suite — Add after auth is working; currently just need functional auth
-- Rate limiting — Not needed for internal demo
-- CSRF protection — Not needed for internal demo
+- SMS 2FA — Removed in v1, adds cost/complexity without being in UI
+- 2FA login challenge UI — Backend ready, frontend needed (v2 candidate)
 
 ## Context
 
-This is a brownfield project with substantial existing code (~86 routes). The codebase supports two modes:
+This is a brownfield project with substantial existing code (~90 routes). The codebase supports two modes:
 - **Mock mode** (`USE_MOCK_DATA=true`): In-memory data, no database required
 - **Production mode**: PostgreSQL via Prisma, real email via Resend
 
-Current focus is making auth work in mock mode for demos, then ensuring production mode auth flows function correctly.
+v1 shipped complete authentication with both modes working. Environment validation enforces required secrets at build time. Security vulnerabilities identified in initial audit have been addressed.
 
-**Known issues from codebase audit:**
-- Auth flow has issues in mock mode (registration succeeds but login fails)
-- Email verification and password reset depend on Resend which requires API key
-- Security issue: `allowDangerousEmailAccountLinking` is enabled
-- 2FA email/SMS methods log to console instead of actually sending
+**Known limitations:**
+- 2FA login challenge flow incomplete (backend throws error, no UI to catch it)
+- Production login page uses API route instead of NextAuth signIn directly
 
 ## Constraints
 
-- **Mock mode first**: Auth must work without database for demos
-- **Production mode second**: Verify flows work with real database and email
+- **Maintain both modes**: Mock and production must both work
 - **No breaking changes**: Existing functionality must keep working
-- **Security**: Fix identified vulnerabilities before any public use
+- **Security first**: All new features should follow established patterns
 
 ## Key Decisions
 
@@ -77,9 +79,15 @@ Current focus is making auth work in mock mode for demos, then ensuring producti
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Fix mock mode auth first | Demo use case requires no database | — Pending |
-| Keep NextAuth v5 beta | Already integrated, migration risky | — Pending |
-| Use Resend for email | Already configured, works well | — Pending |
+| Fix mock mode auth first | Demo use case requires no database | Good |
+| Keep NextAuth v5 beta | Already integrated, migration risky | Good |
+| Use Resend for email | Already configured, works well | Good |
+| sessionStorage for mock session | Clears on browser close per user preference | Good |
+| Client-side registration in mock | Solves server/client storage mismatch | Good |
+| @t3-oss/env-nextjs for validation | Type-safe, fails fast at build time | Good |
+| 24-hour token expiration | Consistent across all verification tokens | Good |
+| Remove SMS 2FA completely | Not in UI, adds cost/complexity | Good |
+| Log but don't block mock headers | Security through obscurity | Good |
 
 ---
-*Last updated: 2026-01-19 after initial project definition*
+*Last updated: 2026-01-19 after v1 milestone completion*

@@ -101,6 +101,12 @@ export default function RegisterPage() {
           return;
         }
 
+        // Store auto-login token for post-verification auto sign-in
+        if (data.autoLoginToken) {
+          sessionStorage.setItem("pendingVerificationEmail", formData.email);
+          sessionStorage.setItem("autoLoginToken", data.autoLoginToken);
+        }
+
         router.push("/login?registered=true");
       }
     } catch (err) {

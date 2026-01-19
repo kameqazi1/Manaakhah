@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2, Eye, EyeOff, KeyRound } from "lucide-react";
 
-type ResetStatus = "validating" | "valid" | "invalid" | "resetting" | "success" | "error";
+type ResetStatus = "validating" | "valid" | "invalid" | "resetting" | "signing-in" | "success" | "error";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -18,11 +19,41 @@ function ResetPasswordContent() {
 
   const [status, setStatus] = useState<ResetStatus>("validating");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationError, setValidationError] = useState("");
+
+  // Handle auto sign-in after successful password reset
+  const handleResetSuccess = async (userEmail: string, newPassword: string) => {
+    setStatus("signing-in");
+    setSuccessMessage("Password reset! Signing you in...");
+
+    try {
+      const result = await signIn("credentials", {
+        email: userEmail,
+        password: newPassword,
+        redirect: false,
+      });
+
+      if (result?.ok) {
+        // Success! Redirect to home
+        router.push("/");
+        return;
+      }
+    } catch (error) {
+      console.error("Auto sign-in failed:", error);
+    }
+
+    // Fallback: redirect to login
+    setStatus("success");
+    setSuccessMessage("Password reset successfully!");
+    setTimeout(() => {
+      router.push("/login?reset=true");
+    }, 2000);
+  };
 
   // Validate token on mount
   useEffect(() => {
@@ -77,11 +108,9 @@ function ResetPasswordContent() {
       });
 
       if (res.ok) {
-        setStatus("success");
-        // Redirect to login after 2 seconds
-        setTimeout(() => {
-          router.push("/login?reset=true");
-        }, 2000);
+        const data = await res.json();
+        // Auto sign-in with the new password
+        await handleResetSuccess(data.email, password);
       } else {
         const data = await res.json();
         setStatus("error");
@@ -209,12 +238,20 @@ function ResetPasswordContent() {
             </form>
           )}
 
-          {status === "success" && (
+          {(status === "success" || status === "signing-in") && (
             <div className="flex flex-col items-center py-8 space-y-4">
-              <CheckCircle className="h-12 w-12 text-green-600" />
+              {status === "signing-in" ? (
+                <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              ) : (
+                <CheckCircle className="h-12 w-12 text-green-600" />
+              )}
               <div className="text-center space-y-2">
-                <p className="text-lg font-medium text-green-600">Password reset successfully!</p>
-                <p className="text-gray-600">Redirecting to login...</p>
+                <p className="text-lg font-medium text-green-600">
+                  {successMessage || "Password reset successfully!"}
+                </p>
+                <p className="text-gray-600">
+                  {status === "signing-in" ? "Please wait..." : "Redirecting to login..."}
+                </p>
               </div>
             </div>
           )}

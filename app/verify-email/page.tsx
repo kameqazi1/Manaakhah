@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
 
-type VerificationStatus = "loading" | "success" | "error" | "resend-form" | "resend-sent";
+type VerificationStatus = "loading" | "success" | "signing-in" | "error" | "resend-form" | "resend-sent";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -18,8 +19,50 @@ function VerifyEmailContent() {
 
   const [status, setStatus] = useState<VerificationStatus>("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [email, setEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
+
+  // Handle auto sign-in after successful verification
+  const handleVerificationSuccess = async (userEmail: string, canAutoLogin: boolean) => {
+    setStatus("success");
+
+    // Check for stored auto-login token
+    const storedEmail = sessionStorage.getItem("pendingVerificationEmail");
+    const autoLoginToken = sessionStorage.getItem("autoLoginToken");
+
+    if (canAutoLogin && autoLoginToken && storedEmail === userEmail) {
+      setStatus("signing-in");
+      setSuccessMessage("Email verified! Signing you in...");
+
+      // Clear stored tokens
+      sessionStorage.removeItem("pendingVerificationEmail");
+      sessionStorage.removeItem("autoLoginToken");
+
+      try {
+        const result = await signIn("credentials", {
+          email: userEmail,
+          autoLoginToken: autoLoginToken,
+          redirect: false,
+        });
+
+        if (result?.ok) {
+          // Success! Redirect to home
+          router.push("/");
+          return;
+        }
+        // If auto-login fails, fall through to login redirect
+      } catch (error) {
+        console.error("Auto sign-in failed:", error);
+      }
+    }
+
+    // Fallback: redirect to login with success message
+    setSuccessMessage("Email verified successfully!");
+    setTimeout(() => {
+      router.push("/login?verified=true");
+    }, 2000);
+  };
 
   useEffect(() => {
     if (!token) {
@@ -37,11 +80,8 @@ function VerifyEmailContent() {
         });
 
         if (res.ok) {
-          setStatus("success");
-          // Redirect to login after 2 seconds
-          setTimeout(() => {
-            router.push("/login?verified=true");
-          }, 2000);
+          const data = await res.json();
+          await handleVerificationSuccess(data.email, data.canAutoLogin);
         } else {
           const data = await res.json();
           setStatus("error");
@@ -94,12 +134,20 @@ function VerifyEmailContent() {
             </div>
           )}
 
-          {status === "success" && (
+          {(status === "success" || status === "signing-in") && (
             <div className="flex flex-col items-center py-8 space-y-4">
-              <CheckCircle className="h-12 w-12 text-green-600" />
+              {status === "signing-in" ? (
+                <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              ) : (
+                <CheckCircle className="h-12 w-12 text-green-600" />
+              )}
               <div className="text-center space-y-2">
-                <p className="text-lg font-medium text-green-600">Email verified successfully!</p>
-                <p className="text-gray-600">Redirecting to login...</p>
+                <p className="text-lg font-medium text-green-600">
+                  {successMessage || "Email verified successfully!"}
+                </p>
+                <p className="text-gray-600">
+                  {status === "signing-in" ? "Please wait..." : "Redirecting to login..."}
+                </p>
               </div>
             </div>
           )}

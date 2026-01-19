@@ -342,6 +342,10 @@ model User {
   twoFactorSecret      String?
   twoFactorBackupCodes String[]
 
+  // Two-Factor Code (for EMAIL/SMS methods)
+  twoFactorCode        String?
+  twoFactorCodeExpires DateTime?
+
   // Trust & Reputation
   trustScore         Int     @default(50) // 0-100
   karmaPoints        Int     @default(0)

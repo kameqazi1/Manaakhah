@@ -235,6 +235,42 @@ export async function sendAccountLinkEmail(
   }
 }
 
+export async function send2FACodeEmail(email: string, code: string): Promise<void> {
+  await getResend().emails.send({
+    from: `${APP_NAME} <${FROM_EMAIL}>`,
+    to: email,
+    subject: `Your ${APP_NAME} verification code`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5; margin: 0; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <div style="background: linear-gradient(135deg, #16a34a 0%, #059669 100%); padding: 40px 20px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">${APP_NAME}</h1>
+              <p style="color: rgba(255,255,255,0.9); margin-top: 8px;">Verification Code</p>
+            </div>
+            <div style="padding: 40px 30px; text-align: center;">
+              <p style="color: #4b5563; line-height: 1.6;">
+                Your verification code is:
+              </p>
+              <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="font-size: 32px; font-weight: bold; color: #111827; letter-spacing: 8px; margin: 0;">${code}</p>
+              </div>
+              <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+                This code will expire in 10 minutes. If you didn't request this code, you can safely ignore this email.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  });
+}
+
 export async function sendNewReviewNotification(
   businessOwnerEmail: string,
   businessOwnerName: string,

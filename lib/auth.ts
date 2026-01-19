@@ -6,6 +6,7 @@ import Apple from "next-auth/providers/apple";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import * as crypto from "crypto";
 import type { NextAuthConfig } from "next-auth";
 
 // Custom error for 2FA required
@@ -28,13 +29,11 @@ export const authConfig: NextAuthConfig = {
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
     // Apple OAuth Provider
     Apple({
       clientId: process.env.APPLE_CLIENT_ID!,
       clientSecret: process.env.APPLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
     }),
     // Credentials Provider
     Credentials({
@@ -232,31 +231,69 @@ export const authConfig: NextAuthConfig = {
     async signIn({ user, account }) {
       // Handle OAuth sign-in (Google, Apple)
       if (account?.provider === "google" || account?.provider === "apple") {
-        // Check if user exists and is banned
+        // Check if user exists
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
-          select: { isBanned: true, banReason: true },
+          include: { accounts: true },
         });
 
+        // Check if banned
         if (existingUser?.isBanned) {
           return `/login?error=Your account has been suspended. ${existingUser.banReason || ""}`;
         }
 
-        // Update or create user with social login details
-        await prisma.user.upsert({
-          where: { email: user.email! },
-          update: {
-            lastLoginAt: new Date(),
-            lastActiveAt: new Date(),
-            emailVerified: new Date(), // OAuth users are auto-verified
-          },
-          create: {
-            email: user.email!,
-            name: user.name,
-            image: user.image,
-            emailVerified: new Date(),
-          },
-        });
+        // If user exists but doesn't have this OAuth provider linked
+        if (existingUser && !existingUser.accounts.some(a => a.provider === account.provider)) {
+          // Create pending link token
+          const token = crypto.randomBytes(32).toString("hex");
+          const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+          // Delete any existing pending links for this user/provider combo
+          await prisma.pendingAccountLink.deleteMany({
+            where: {
+              userId: existingUser.id,
+              provider: account.provider,
+            },
+          });
+
+          await prisma.pendingAccountLink.create({
+            data: {
+              userId: existingUser.id,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              token,
+              expires,
+            },
+          });
+
+          // Send verification email
+          const { sendAccountLinkEmail } = await import("@/lib/email");
+          await sendAccountLinkEmail(user.email!, token, account.provider);
+
+          // Redirect to link-account page (NOT an error, just a flow)
+          return `/link-account?email=${encodeURIComponent(user.email!)}&provider=${account.provider}`;
+        }
+
+        // New user via OAuth - create the user
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name,
+              image: user.image,
+              emailVerified: new Date(), // OAuth users are auto-verified
+            },
+          });
+        } else {
+          // Existing user with this provider already linked - just update timestamps
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              lastLoginAt: new Date(),
+              lastActiveAt: new Date(),
+            },
+          });
+        }
       }
       return true;
     },

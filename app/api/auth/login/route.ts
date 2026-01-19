@@ -16,9 +16,9 @@ export async function POST(req: Request) {
 
     // MOCK MODE: Simple authentication
     if (isMockMode()) {
-      const user = mockLogin(email, password);
+      const result = mockLogin(email, password);
 
-      if (!user) {
+      if ('error' in result) {
         return NextResponse.json(
           { error: "Invalid email or password" },
           { status: 401 }
@@ -28,10 +28,10 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+          id: result.user.id,
+          email: result.user.email,
+          name: result.user.name,
+          role: result.user.role,
         },
       });
     }

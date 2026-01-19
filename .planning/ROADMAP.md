@@ -10,7 +10,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [x] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
+- [ ] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
 - [ ] **Phase 2: Clustering** - Native GeoJSON clustering for performance with many businesses
 - [ ] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
 - [ ] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
@@ -23,11 +23,12 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 **Goal**: Users see businesses on a WebGL-accelerated map with their current location indicated
 **Depends on**: Nothing (first phase)
 **Requirements**: MAP-01, MAP-05
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 **Key Files**:
 - `components/map/MapLibreMap.tsx` (new, replaces LeafletMap.tsx)
 - `components/map/UserLocationMarker.tsx` (new)
+- `app/search/page.tsx` (add map view)
 - CSS imports for maplibre-gl
 
 **Success Criteria** (what must be TRUE):
@@ -40,6 +41,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 Plans:
 - [x] 01-01-PLAN.md — Install MapLibre, create MapLibreMap component with markers and popups
 - [x] 01-02-PLAN.md — Add user location marker, geolocation, and distance display
+- [ ] 01-03-PLAN.md — Add map view to search page (gap closure)
 
 ---
 
@@ -172,7 +174,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MapLibre Foundation | 2/2 | Complete | 2026-01-19 |
+| 1. MapLibre Foundation | 2/3 | Gap closure pending | - |
 | 2. Clustering | 0/1 | Not started | - |
 | 3. Search-to-Map Sync | 0/2 | Not started | - |
 | 4. Map-to-Search Sync | 0/1 | Not started | - |
@@ -182,4 +184,5 @@ Plans:
 ---
 *Roadmap created: 2026-01-19*
 *Phase 1 planned: 2026-01-19*
+*Gap closure plan added: 2026-01-19*
 *Milestone: v1.1 Map Overhaul*

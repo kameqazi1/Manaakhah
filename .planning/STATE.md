@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users can find and connect with verified Muslim-owned businesses in their area
-**Current focus:** Phase 2 - Production Auth Flows (Complete)
+**Current focus:** Phase 3 - Security Fixes (In Progress)
 
 ## Current State
 
 **Milestone:** Fix Auth & Security
-**Phase:** 2 of 4 (Production Auth Flows)
-**Plan:** 2 of 2 (Complete)
-**Status:** Phase 2 Complete
+**Phase:** 3 of 4 (Security Fixes)
+**Plan:** 2 of ? (In Progress)
+**Status:** Plan 03-02 Complete
 
 Progress: [================    ] 50% (2 of 4 phases complete)
 
@@ -22,7 +22,7 @@ Progress: [================    ] 50% (2 of 4 phases complete)
 |-------|--------|-------|
 | 1 - Mock Mode Auth Fix | Complete | 1/1 |
 | 2 - Production Auth Flows | Complete | 2/2 |
-| 3 - Security Fixes | Pending | 0/? |
+| 3 - Security Fixes | In Progress | 2/? |
 | 4 - Missing Email Features | Pending | 0/? |
 
 ## Accumulated Decisions
@@ -36,6 +36,9 @@ Progress: [================    ] 50% (2 of 4 phases complete)
 | 02-02 | Auto-login token in sessionStorage | Security: cleared on browser close, one-time use |
 | 02-02 | 24-hour auto-login token validity | Matches email verification link expiration |
 | 02-02 | Server-side cooldown enforcement | Rate limiting at API level, client UI informational |
+| 03-02 | 24-hour token for account linking | Matches other verification token expiration |
+| 03-02 | Delete existing pending links first | Prevents token accumulation on retry |
+| 03-02 | Redirect to info page on OAuth conflict | Not an error, just a required verification step |
 
 ## Session Log
 
@@ -48,22 +51,24 @@ Progress: [================    ] 50% (2 of 4 phases complete)
 | 2026-01-19 | Phase 1 executed | 7 tasks, 4 commits, mock auth fully working |
 | 2026-01-19 | Phase 2 Plan 1 executed | 3 tasks, 3 commits, auth flow pages created |
 | 2026-01-19 | Phase 2 Plan 2 executed | 3 tasks, 3 commits, auto sign-in + rate limiting |
+| 2026-01-19 | Phase 3 Plan 2 executed | 3 tasks, 3 commits, safe OAuth account linking |
 
 ## Session Continuity
 
-**Last session:** 2026-01-19T17:15:00Z
-**Stopped at:** Completed 02-02-PLAN.md
+**Last session:** 2026-01-19T17:42:00Z
+**Stopped at:** Completed 03-02-PLAN.md
 **Resume file:** None
 
 ## Next Action
 
-**Run:** `/gsd:plan-phase 3` (Security Fixes) or `/gsd:plan-phase 4` (Missing Email Features)
+**Run:** `/gsd:execute-phase 03-01` or `/gsd:execute-phase 03-03` (remaining Security Fixes)
 
-Phase 2 complete. Auth flows now support:
-- Auto sign-in after email verification (redirects to home)
-- Auto sign-in after password reset (redirects to home)
-- 1-minute cooldown on resend verification with countdown UI
-- Success banners on login page for fallback cases
+Plan 03-02 complete. OAuth account linking now secure:
+- allowDangerousEmailAccountLinking removed from Google and Apple providers
+- Email conflicts require verification via PendingAccountLink token
+- /link-account page shows pending/error states
+- Login page shows success after account linked
+- Full flow: OAuth -> email conflict -> verify email -> account linked
 
 ---
 *State updated: 2026-01-19*

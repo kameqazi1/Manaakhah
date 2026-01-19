@@ -38,7 +38,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 5. SSR works without hydration errors (dynamic import with ssr: false preserved)
 
 Plans:
-- [ ] 01-01-PLAN.md — Install MapLibre, create MapLibreMap component with markers and popups
+- [x] 01-01-PLAN.md — Install MapLibre, create MapLibreMap component with markers and popups
 - [ ] 01-02-PLAN.md — Add user location marker, geolocation, and distance display
 
 ---
@@ -172,7 +172,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MapLibre Foundation | 0/2 | Planned | - |
+| 1. MapLibre Foundation | 1/2 | In progress | - |
 | 2. Clustering | 0/1 | Not started | - |
 | 3. Search-to-Map Sync | 0/2 | Not started | - |
 | 4. Map-to-Search Sync | 0/1 | Not started | - |

@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import Map, { Marker, Popup, NavigationControl, MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CATEGORIES, BUSINESS_TAGS } from './BusinessMap';
+import { UserLocationMarker } from './UserLocationMarker';
 
 interface Business {
   id: string;
@@ -31,6 +32,26 @@ interface MapLibreMapProps {
   radius: number;
 }
 
+// Haversine formula for distance calculation in miles
+function calculateDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function MapLibreMap({
   businesses,
   userLat,
@@ -40,6 +61,70 @@ export default function MapLibreMap({
   const mapRef = useRef<MapRef | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [hoveredBusinessId, setHoveredBusinessId] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // Request user's geolocation
+  const requestUserLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported by your browser');
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setIsLocating(false);
+      },
+      (error) => {
+        setIsLocating(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError('Location permission denied');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError('Location unavailable');
+            break;
+          case error.TIMEOUT:
+            setLocationError('Location request timed out');
+            break;
+          default:
+            setLocationError('Unable to get location');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000, // 5 min cache
+      }
+    );
+  }, []);
+
+  // Request location on mount
+  useEffect(() => {
+    requestUserLocation();
+  }, [requestUserLocation]);
+
+  // Compute distances for businesses based on user location
+  const businessesWithDistance = useMemo(() => {
+    const userPos = userLocation || { lat: userLat, lng: userLng };
+    return businesses.map((business) => ({
+      ...business,
+      distance: calculateDistance(
+        userPos.lat,
+        userPos.lng,
+        business.latitude,
+        business.longitude
+      ),
+    }));
+  }, [businesses, userLocation, userLat, userLng]);
 
   // Fit bounds when businesses change
   useEffect(() => {
@@ -109,26 +194,48 @@ export default function MapLibreMap({
             >
               <NavigationControl position="top-right" />
 
-              {/* User location marker with pulse animation */}
-              <Marker
-                latitude={userLat}
-                longitude={userLng}
-                anchor="center"
+              {/* Center on my location button */}
+              <button
+                onClick={() => {
+                  if (userLocation) {
+                    mapRef.current?.flyTo({
+                      center: [userLocation.lng, userLocation.lat],
+                      zoom: 14,
+                      duration: 1000,
+                    });
+                  } else {
+                    requestUserLocation();
+                  }
+                }}
+                disabled={isLocating}
+                className="absolute top-24 right-2 z-10 bg-white p-2 rounded-lg shadow-md hover:bg-gray-50 disabled:opacity-50"
+                title="Center on my location"
               >
-                <div className="relative w-6 h-6">
-                  <div
-                    className="absolute top-1/2 left-1/2 w-4 h-4 bg-blue-500 border-[3px] border-white rounded-full shadow-lg z-10"
-                    style={{ transform: 'translate(-50%, -50%)' }}
-                  />
-                  <div
-                    className="absolute top-1/2 left-1/2 w-6 h-6 bg-blue-500 rounded-full opacity-30 animate-pulse"
-                    style={{ transform: 'translate(-50%, -50%)' }}
-                  />
-                </div>
-              </Marker>
+                {isLocating ? (
+                  <span className="w-5 h-5 block border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                )}
+              </button>
+
+              {/* User location marker - show at geolocation or fallback to props */}
+              {userLocation ? (
+                <UserLocationMarker
+                  latitude={userLocation.lat}
+                  longitude={userLocation.lng}
+                />
+              ) : (
+                <UserLocationMarker
+                  latitude={userLat}
+                  longitude={userLng}
+                />
+              )}
 
               {/* Business markers */}
-              {businesses.map((business) => {
+              {businessesWithDistance.map((business) => {
                 const category = getCategoryInfo(business.category);
                 const isHovered = hoveredBusinessId === business.id;
 
@@ -295,6 +402,13 @@ export default function MapLibreMap({
                     </div>
                   </div>
                 </Popup>
+              )}
+
+              {/* Location error message */}
+              {locationError && (
+                <div className="absolute bottom-4 left-4 z-10 bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded-lg text-sm">
+                  {locationError}
+                </div>
               )}
             </Map>
           </div>

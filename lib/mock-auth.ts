@@ -18,33 +18,43 @@ export interface MockSession {
   };
 }
 
-/**
- * Mock login - just checks if user exists with matching password
- */
-export function mockLogin(email: string, password: string): MockUser | null {
-  const users = mockStorage.getUsers();
-  const user = users.find(
-    (u) => u.email === email && u.password === password
-  );
+export type MockLoginResult =
+  | { user: MockUser; error?: never }
+  | { error: 'EMAIL_NOT_FOUND' | 'WRONG_PASSWORD'; user?: never };
 
-  if (user) {
-    // Store session in localStorage
-    if (typeof window !== "undefined") {
-      const session: MockSession = {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          image: user.image,
-        },
-      };
-      localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    }
-    return user;
+/**
+ * Mock login - checks if user exists with matching password
+ * Returns specific error codes for email not found vs wrong password
+ */
+export function mockLogin(email: string, password: string): MockLoginResult {
+  const users = mockStorage.getUsers();
+
+  // First check if email exists
+  const user = users.find((u) => u.email === email);
+
+  if (!user) {
+    return { error: 'EMAIL_NOT_FOUND' };
   }
 
-  return null;
+  // Then check password
+  if (user.password !== password) {
+    return { error: 'WRONG_PASSWORD' };
+  }
+
+  // Store session in sessionStorage
+  if (typeof window !== "undefined") {
+    const session: MockSession = {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        image: user.image,
+      },
+    };
+    sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+  }
+  return { user };
 }
 
 /**
@@ -87,12 +97,13 @@ export function mockRegister(data: {
 }
 
 /**
- * Get current session from localStorage
+ * Get current session from sessionStorage
+ * Session persists across page refreshes but clears when browser closes
  */
 export function getMockSession(): MockSession | null {
   if (typeof window === "undefined") return null;
 
-  const stored = localStorage.getItem(MOCK_SESSION_KEY);
+  const stored = sessionStorage.getItem(MOCK_SESSION_KEY);
   if (!stored) return null;
 
   try {
@@ -124,7 +135,7 @@ export function setMockSession(userId: string) {
   };
 
   if (typeof window !== "undefined") {
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
+    sessionStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
   }
 
   return session;
@@ -135,7 +146,7 @@ export function setMockSession(userId: string) {
  */
 export function mockLogout() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(MOCK_SESSION_KEY);
+    sessionStorage.removeItem(MOCK_SESSION_KEY);
   }
 }
 

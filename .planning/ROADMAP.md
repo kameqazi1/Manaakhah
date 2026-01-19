@@ -9,7 +9,7 @@
 |-------|------|--------|--------------|
 | 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
 | 2 | Production Auth Flows | Complete | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
-| 3 | Security Fixes | Pending | SEC-01, SEC-02, SEC-03 |
+| 3 | Security Fixes | Planned | SEC-01, SEC-02, SEC-03 |
 | 4 | Missing Email Features | Pending | FEAT-01, FEAT-02, FEAT-03 |
 
 ## Phase 1: Mock Mode Auth Fix
@@ -94,12 +94,20 @@ Security issues identified in codebase audit. Must be fixed before any public or
 
 **Key files:**
 - `lib/auth.ts` - NextAuth config with dangerous linking
+- `lib/env.ts` - Environment validation (new)
+- `middleware.ts` - Mock header protection (new)
 - API routes using `x-user-id`/`x-user-role` headers
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md - Environment validation and mock header protection (SEC-02, SEC-03)
+- [ ] 03-02-PLAN.md - Safe OAuth account linking flow (SEC-01)
 
 **Success criteria:**
 - [ ] `allowDangerousEmailAccountLinking` removed or properly secured
 - [ ] App fails fast with clear error if required env vars missing
-- [ ] Mock auth headers rejected when not in mock mode
+- [ ] Mock auth headers logged when sent outside mock mode
 
 ---
 
@@ -138,4 +146,4 @@ Phase 4 (Email Features) → depends on Phase 2 (email infrastructure verified)
 
 ---
 *Roadmap created: 2026-01-19*
-*Phase 2 planned: 2026-01-19*
+*Phase 3 planned: 2026-01-19*

@@ -22,6 +22,24 @@ function VerifyEmailContent() {
   const [successMessage, setSuccessMessage] = useState("");
   const [email, setEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [resendError, setResendError] = useState("");
+
+  // Handle cooldown countdown
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setInterval(() => {
+        setCooldownSeconds((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [cooldownSeconds]);
 
   // Handle auto sign-in after successful verification
   const handleVerificationSuccess = async (userEmail: string, canAutoLogin: boolean) => {
@@ -103,6 +121,7 @@ function VerifyEmailContent() {
   const handleResendSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResendLoading(true);
+    setResendError("");
 
     try {
       const res = await fetch("/api/auth/resend-verification", {
@@ -110,6 +129,20 @@ function VerifyEmailContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+
+      if (res.status === 429) {
+        // Rate limited - parse cooldown seconds from error message
+        const data = await res.json();
+        const match = data.error?.match(/wait (\d+) seconds/);
+        if (match) {
+          setCooldownSeconds(parseInt(match[1], 10));
+        } else {
+          setCooldownSeconds(60); // Default to 60 seconds
+        }
+        setResendError(data.error || "Please wait before requesting another email");
+        setResendLoading(false);
+        return;
+      }
 
       // Always show success to prevent email enumeration
       setStatus("resend-sent");
@@ -177,6 +210,13 @@ function VerifyEmailContent() {
               <div className="text-center mb-4">
                 <p className="text-gray-600">Enter your email address to receive a new verification link.</p>
               </div>
+
+              {resendError && (
+                <div className="bg-amber-50 text-amber-700 p-3 rounded-md text-sm">
+                  {resendError}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -188,19 +228,29 @@ function VerifyEmailContent() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={resendLoading}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={resendLoading || cooldownSeconds > 0}
+              >
                 {resendLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Sending...
                   </>
+                ) : cooldownSeconds > 0 ? (
+                  `Resend in ${cooldownSeconds}s`
                 ) : (
                   "Send verification link"
                 )}
               </Button>
               <button
                 type="button"
-                onClick={() => setStatus("error")}
+                onClick={() => {
+                  setStatus("error");
+                  setResendError("");
+                  setCooldownSeconds(0);
+                }}
                 className="w-full text-sm text-gray-600 hover:text-gray-800"
               >
                 Cancel

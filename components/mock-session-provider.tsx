@@ -33,16 +33,8 @@ export function MockSessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadSession();
-
-    // Listen for storage changes (for multi-tab sync)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "manakhaah-mock-session") {
-        loadSession();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    // Note: sessionStorage doesn't fire storage events cross-tab, which is intentional
+    // Each tab has its own independent session
   }, []);
 
   return (

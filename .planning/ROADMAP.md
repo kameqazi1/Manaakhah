@@ -8,7 +8,7 @@
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
 | 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
-| 2 | Production Auth Flows | Pending | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
+| 2 | Production Auth Flows | Planned | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
 | 3 | Security Fixes | Pending | SEC-01, SEC-02, SEC-03 |
 | 4 | Missing Email Features | Pending | FEAT-01, FEAT-02, FEAT-03 |
 
@@ -52,21 +52,29 @@ Currently, registration creates a user in mock storage but login fails to authen
 - AUTH-07: User can reset password via email link
 
 **Context:**
-These flows exist but need verification they work end-to-end with Resend email service and PostgreSQL. Requires `RESEND_API_KEY` and `DATABASE_URL` environment variables.
+Backend APIs exist and work. Frontend pages missing. Per CONTEXT.md decisions: auto sign-in after verification/reset, 1-minute resend cooldown.
 
 **Key files:**
 - `lib/email.ts` - Email sending via Resend
-- `app/api/auth/register/route.ts` - Sends verification email
 - `app/api/auth/verify-email/route.ts` - Handles verification link
 - `app/api/auth/forgot-password/route.ts` - Sends reset email
 - `app/api/auth/reset-password/route.ts` - Handles password reset
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md - Create frontend pages (verify-email, forgot-password, reset-password)
+- [ ] 02-02-PLAN.md - Add auto sign-in and resend cooldown
+
 **Success criteria:**
 - [ ] Registration sends verification email
 - [ ] Verification link works and marks user verified
+- [ ] Auto sign-in after verification, redirect to home
 - [ ] Forgot password sends reset email
 - [ ] Reset link allows setting new password
-- [ ] Can sign in with new password
+- [ ] Auto sign-in after reset with new password
+- [ ] Invalid/expired links show error with resend option
+- [ ] Retry cooldown enforced (1 min)
 
 ---
 
@@ -128,3 +136,4 @@ Phase 4 (Email Features) → depends on Phase 2 (email infrastructure verified)
 
 ---
 *Roadmap created: 2026-01-19*
+*Phase 2 planned: 2026-01-19*

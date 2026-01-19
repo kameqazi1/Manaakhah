@@ -5,8 +5,8 @@ import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-// Dynamically import the actual map component to avoid SSR issues
-const LeafletMap = dynamic(() => import("./LeafletMap"), {
+// Dynamically import MapLibreMap to avoid SSR issues with WebGL
+const MapLibreMap = dynamic(() => import("./MapLibreMap"), {
   ssr: false,
   loading: () => (
     <Card>
@@ -219,7 +219,7 @@ export function BusinessMap({ userLat = 37.5485, userLng = -121.9886, radius = 1
       </Card>
 
       {/* Map Component */}
-      <LeafletMap
+      <MapLibreMap
         businesses={filteredBusinesses}
         userLat={userLat}
         userLng={userLng}

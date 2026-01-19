@@ -28,9 +28,9 @@ Requirements for this work phase. Each maps to roadmap phases.
 
 ### Missing Functionality
 
-- [ ] **FEAT-01**: 2FA codes sent via email (not just logged to console)
-- [ ] **FEAT-02**: 2FA codes sent via SMS (or remove SMS option if not implementing)
-- [ ] **FEAT-03**: Staff invitation emails sent when adding staff to business
+- [x] **FEAT-01**: 2FA codes sent via email (not just logged to console)
+- [x] **FEAT-02**: 2FA codes sent via SMS (or remove SMS option if not implementing)
+- [x] **FEAT-03**: Staff invitation emails sent when adding staff to business
 
 ## v2 Requirements
 
@@ -79,9 +79,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | SEC-01 | Phase 3 | Complete |
 | SEC-02 | Phase 3 | Complete |
 | SEC-03 | Phase 3 | Complete |
-| FEAT-01 | Phase 4 | Pending |
-| FEAT-02 | Phase 4 | Pending |
-| FEAT-03 | Phase 4 | Pending |
+| FEAT-01 | Phase 4 | Complete |
+| FEAT-02 | Phase 4 | Complete |
+| FEAT-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 13 total
@@ -90,4 +90,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after Phase 3 completion*
+*Last updated: 2026-01-19 after Phase 4 completion (Milestone Complete)*

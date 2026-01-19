@@ -10,7 +10,7 @@
 | 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
 | 2 | Production Auth Flows | Complete | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
 | 3 | Security Fixes | Complete | SEC-01, SEC-02, SEC-03 |
-| 4 | Missing Email Features | Planned | FEAT-01, FEAT-02, FEAT-03 |
+| 4 | Missing Email Features | Complete | FEAT-01, FEAT-02, FEAT-03 |
 
 ## Phase 1: Mock Mode Auth Fix
 
@@ -133,13 +133,15 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md - Implement 2FA email delivery (FEAT-01)
-- [ ] 04-02-PLAN.md - Staff invitation emails + remove SMS option (FEAT-02, FEAT-03)
+- [x] 04-01-PLAN.md - Implement 2FA email delivery (FEAT-01)
+- [x] 04-02-PLAN.md - Staff invitation emails + remove SMS option (FEAT-02, FEAT-03)
 
 **Success criteria:**
-- [ ] 2FA email method sends real email with code
-- [ ] SMS method removed from API and types (decision: not implementing)
-- [ ] Staff invitation sends email to invited user
+- [x] 2FA email method sends real email with code
+- [x] SMS method removed from API and types (decision: not implementing)
+- [x] Staff invitation sends email to invited user
+
+**Completed:** 2026-01-19
 
 ---
 

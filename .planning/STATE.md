@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Current milestone:** v1.1 Map Overhaul
 **Phase:** 1 of 6 (MapLibre Foundation)
-**Plan:** 1 of 2 in current phase
-**Status:** In progress
-**Last activity:** 2026-01-19 - Completed 01-01-PLAN.md
+**Plan:** 2 of 2 in current phase
+**Status:** Phase complete
+**Last activity:** 2026-01-19 - Completed 01-02-PLAN.md
 
-Progress: [#---------] 10%
+Progress: [##--------] 20%
 
 ## Shipped Milestones
 
@@ -29,7 +29,7 @@ Full details: `.planning/milestones/v1-ROADMAP.md`
 
 | Phase | Name | Requirements | Status |
 |-------|------|--------------|--------|
-| 1 | MapLibre Foundation | MAP-01, MAP-05 | In progress (1/2 plans) |
+| 1 | MapLibre Foundation | MAP-01, MAP-05 | Complete (2/2 plans) |
 | 2 | Clustering | MAP-02 | Not started |
 | 3 | Search-to-Map Sync | MAP-03, MAP-06, API-01, ARCH-01 | Not started |
 | 4 | Map-to-Search Sync | MAP-04 | Not started |
@@ -50,12 +50,13 @@ Full details: `.planning/milestones/v1-ROADMAP.md`
 | 2026-01-19 | v1.1 defined | Requirements scoped, research completed |
 | 2026-01-19 | v1.1 roadmap | 6 phases, 10 requirements mapped |
 | 2026-01-19 | 01-01 complete | MapLibre foundation, markers, popups working |
+| 2026-01-19 | 01-02 complete | User location marker, geolocation, distance display |
 
 ## Session Continuity
 
 **Last session:** 2026-01-19
-**Stopped at:** Completed 01-01-PLAN.md
-**Next action:** Execute 01-02-PLAN.md (user location marker)
+**Stopped at:** Completed 01-02-PLAN.md
+**Next action:** Plan Phase 2 (Clustering)
 **Resume file:** None
 
 ---

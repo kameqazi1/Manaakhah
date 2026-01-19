@@ -10,7 +10,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
+- [x] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
 - [ ] **Phase 2: Clustering** - Native GeoJSON clustering for performance with many businesses
 - [ ] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
 - [ ] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
@@ -39,7 +39,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 
 Plans:
 - [x] 01-01-PLAN.md — Install MapLibre, create MapLibreMap component with markers and popups
-- [ ] 01-02-PLAN.md — Add user location marker, geolocation, and distance display
+- [x] 01-02-PLAN.md — Add user location marker, geolocation, and distance display
 
 ---
 
@@ -172,7 +172,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MapLibre Foundation | 1/2 | In progress | - |
+| 1. MapLibre Foundation | 2/2 | Complete | 2026-01-19 |
 | 2. Clustering | 0/1 | Not started | - |
 | 3. Search-to-Map Sync | 0/2 | Not started | - |
 | 4. Map-to-Search Sync | 0/1 | Not started | - |

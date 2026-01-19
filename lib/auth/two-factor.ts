@@ -161,14 +161,4 @@ export async function verifyEmailCode(userId: string, code: string): Promise<boo
   return true;
 }
 
-/**
- * Send 2FA code via SMS
- */
-export async function sendTwoFactorSMS(phone: string, code: string): Promise<boolean> {
-  // TODO: Implement SMS sending with your preferred provider (Twilio, etc.)
-  console.log(`[2FA] Sending code ${code} to ${phone}`);
-
-  // For now, return true as placeholder
-  // In production, integrate with SMS service
-  return true;
-}
+// SMS 2FA removed - not implemented (see 04-02-PLAN.md)

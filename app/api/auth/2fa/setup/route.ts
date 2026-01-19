@@ -42,9 +42,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { method } = body; // AUTHENTICATOR, SMS, EMAIL
 
-    if (!method || !["AUTHENTICATOR", "SMS", "EMAIL"].includes(method)) {
+    if (!method || !["AUTHENTICATOR", "EMAIL"].includes(method)) {
       return NextResponse.json(
-        { error: "Invalid 2FA method. Choose AUTHENTICATOR, SMS, or EMAIL" },
+        { error: "Invalid 2FA method. Choose AUTHENTICATOR or EMAIL" },
         { status: 400 }
       );
     }
@@ -87,20 +87,6 @@ export async function POST(req: Request) {
         success: true,
         method: "EMAIL",
         message: "A verification code has been sent to your email. Enter it to complete setup.",
-      });
-    } else if (method === "SMS") {
-      // For SMS, just set the method (SMS not implemented yet)
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          twoFactorMethod: method,
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        method,
-        message: `${method} verification will be set up. Proceed to verify.`,
       });
     }
 

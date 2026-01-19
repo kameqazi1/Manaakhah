@@ -272,7 +272,6 @@ enum DealType {
 
 enum TwoFactorMethod {
   AUTHENTICATOR
-  SMS
   EMAIL
 }
 

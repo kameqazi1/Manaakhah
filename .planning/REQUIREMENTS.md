@@ -15,10 +15,10 @@ Requirements for this work phase. Each maps to roadmap phases.
 
 ### Authentication (Production Mode)
 
-- [ ] **AUTH-04**: User receives verification email after registration
-- [ ] **AUTH-05**: User can verify email by clicking link
-- [ ] **AUTH-06**: User can request password reset email
-- [ ] **AUTH-07**: User can reset password via email link
+- [x] **AUTH-04**: User receives verification email after registration
+- [x] **AUTH-05**: User can verify email by clicking link
+- [x] **AUTH-06**: User can request password reset email
+- [x] **AUTH-07**: User can reset password via email link
 
 ### Security
 
@@ -72,10 +72,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| AUTH-04 | Phase 2 | Pending |
-| AUTH-05 | Phase 2 | Pending |
-| AUTH-06 | Phase 2 | Pending |
-| AUTH-07 | Phase 2 | Pending |
+| AUTH-04 | Phase 2 | Complete |
+| AUTH-05 | Phase 2 | Complete |
+| AUTH-06 | Phase 2 | Complete |
+| AUTH-07 | Phase 2 | Complete |
 | SEC-01 | Phase 3 | Pending |
 | SEC-02 | Phase 3 | Pending |
 | SEC-03 | Phase 3 | Pending |
@@ -90,4 +90,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after Phase 1 completion*
+*Last updated: 2026-01-19 after Phase 2 completion*

@@ -8,7 +8,7 @@
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
 | 1 | Mock Mode Auth Fix | Complete | AUTH-01, AUTH-02, AUTH-03 |
-| 2 | Production Auth Flows | Planned | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
+| 2 | Production Auth Flows | Complete | AUTH-04, AUTH-05, AUTH-06, AUTH-07 |
 | 3 | Security Fixes | Pending | SEC-01, SEC-02, SEC-03 |
 | 4 | Missing Email Features | Pending | FEAT-01, FEAT-02, FEAT-03 |
 
@@ -63,18 +63,20 @@ Backend APIs exist and work. Frontend pages missing. Per CONTEXT.md decisions: a
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md - Create frontend pages (verify-email, forgot-password, reset-password)
-- [ ] 02-02-PLAN.md - Add auto sign-in and resend cooldown
+- [x] 02-01-PLAN.md - Create frontend pages (verify-email, forgot-password, reset-password)
+- [x] 02-02-PLAN.md - Add auto sign-in and resend cooldown
 
 **Success criteria:**
-- [ ] Registration sends verification email
-- [ ] Verification link works and marks user verified
-- [ ] Auto sign-in after verification, redirect to home
-- [ ] Forgot password sends reset email
-- [ ] Reset link allows setting new password
-- [ ] Auto sign-in after reset with new password
-- [ ] Invalid/expired links show error with resend option
-- [ ] Retry cooldown enforced (1 min)
+- [x] Registration sends verification email
+- [x] Verification link works and marks user verified
+- [x] Auto sign-in after verification, redirect to home
+- [x] Forgot password sends reset email
+- [x] Reset link allows setting new password
+- [x] Auto sign-in after reset with new password
+- [x] Invalid/expired links show error with resend option
+- [x] Retry cooldown enforced (1 min)
+
+**Completed:** 2026-01-19
 
 ---
 

@@ -101,8 +101,10 @@ export const env = createEnv({
     NEXT_PUBLIC_DEFAULT_CITY: process.env.NEXT_PUBLIC_DEFAULT_CITY,
   },
 
-  // Skip validation in CI environments or when explicitly requested
-  skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
+  // Skip validation on Vercel builds or when explicitly requested
+  // Vercel sets VERCEL=1 during builds - we validate at runtime instead
+  skipValidation:
+    process.env.SKIP_ENV_VALIDATION === "true" || process.env.VERCEL === "1",
 
   // Called when validation fails
   onValidationError: (error) => {

@@ -1,5 +1,18 @@
 import { MockDatabase } from "./types";
-import { initialMockData } from "./seed-data";
+
+// Empty initial data - no seed data
+const emptyMockData: MockDatabase = {
+  users: [],
+  businesses: [],
+  reviews: [],
+  scrapedBusinesses: [],
+  conversations: [],
+  messages: [],
+  bookings: [],
+  communityPosts: [],
+  postComments: [],
+  businessViews: [],
+};
 
 /**
  * In-memory storage for mock data
@@ -9,12 +22,12 @@ class MockStorage {
   private data: MockDatabase;
 
   constructor() {
-    // Load from localStorage if in browser, otherwise use initial data
+    // Load from localStorage if in browser, otherwise use empty data
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("manakhaah-mock-data");
-      this.data = stored ? JSON.parse(stored, this.dateReviver) : { ...initialMockData };
+      this.data = stored ? JSON.parse(stored, this.dateReviver) : { ...emptyMockData };
     } else {
-      this.data = { ...initialMockData };
+      this.data = { ...emptyMockData };
     }
   }
 
@@ -143,9 +156,9 @@ class MockStorage {
     }
   }
 
-  // Reset to initial data
+  // Reset to empty data
   reset() {
-    this.data = { ...initialMockData };
+    this.data = { ...emptyMockData };
     this.persist();
   }
 

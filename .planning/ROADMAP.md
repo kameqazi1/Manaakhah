@@ -95,12 +95,13 @@ Plans:
 **Goal**: Users can explore the map and search the visible area
 **Depends on**: Phase 3
 **Requirements**: MAP-04
-**Plans**: TBD
+**Plans**: 1 plan
 
 **Key Files**:
 - `hooks/useMapSearch.ts` (extend for bidirectional sync)
 - `components/map/SearchThisAreaButton.tsx` (new)
-- URL state management
+- `components/map/MapLibreMap.tsx` (add onMoveEnd tracking)
+- `app/search/page.tsx` (stale state visual feedback)
 
 **Success Criteria** (what must be TRUE):
 1. "Search this area" button appears after user pans/zooms the map
@@ -109,7 +110,7 @@ Plans:
 4. No infinite loops between map and search updates (300ms debounce)
 
 Plans:
-- [ ] 04-01: Bidirectional sync with Search this area button
+- [ ] 04-01-PLAN.md — Bidirectional sync with Search this area button
 
 ---
 
@@ -177,7 +178,7 @@ Plans:
 | 1. MapLibre Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Clustering | 1/1 | Complete | 2026-01-19 |
 | 3. Search-to-Map Sync | 2/2 | Complete | 2026-01-19 |
-| 4. Map-to-Search Sync | 0/1 | Not started | - |
+| 4. Map-to-Search Sync | 0/1 | Planned | - |
 | 5. Mobile Optimization | 0/1 | Not started | - |
 | 6. Cleanup | 0/1 | Not started | - |
 
@@ -188,4 +189,5 @@ Plans:
 *Phase 2 planned: 2026-01-19*
 *Phase 3 planned: 2026-01-20*
 *Phase 3 complete: 2026-01-19*
+*Phase 4 planned: 2026-01-19*
 *Milestone: v1.1 Map Overhaul*

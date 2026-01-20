@@ -70,13 +70,13 @@ Plans:
 **Goal**: Search filters and results automatically update the map view
 **Depends on**: Phase 2
 **Requirements**: MAP-03, MAP-06, API-01, ARCH-01
-**Plans**: TBD
+**Plans**: 2 plans
 
 **Key Files**:
 - `hooks/useMapSearch.ts` (new, central state management)
 - `app/api/businesses/route.ts` (extend with bounds params)
-- `components/search/SearchFilters.tsx` (refactor to use hook)
-- `app/search/page.tsx` (add map view toggle)
+- `components/search/ViewToggle.tsx` (new, view mode toggle)
+- `app/search/page.tsx` (refactor to use hook, add view toggles)
 
 **Success Criteria** (what must be TRUE):
 1. Search results cause map to fit bounds to show all results
@@ -86,8 +86,8 @@ Plans:
 5. useMapSearch hook provides shared state between map and list components
 
 Plans:
-- [ ] 03-01: API bounds extension and useMapSearch hook
-- [ ] 03-02: Search page map integration and view toggles
+- [ ] 03-01-PLAN.md — API bounds extension and useMapSearch hook
+- [ ] 03-02-PLAN.md — Search page map integration and view toggles
 
 ---
 
@@ -176,7 +176,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. MapLibre Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Clustering | 1/1 | Complete | 2026-01-19 |
-| 3. Search-to-Map Sync | 0/2 | Not started | - |
+| 3. Search-to-Map Sync | 0/2 | Planned | - |
 | 4. Map-to-Search Sync | 0/1 | Not started | - |
 | 5. Mobile Optimization | 0/1 | Not started | - |
 | 6. Cleanup | 0/1 | Not started | - |
@@ -186,4 +186,5 @@ Plans:
 *Phase 1 planned: 2026-01-19*
 *Gap closure plan added: 2026-01-19*
 *Phase 2 planned: 2026-01-19*
+*Phase 3 planned: 2026-01-20*
 *Milestone: v1.1 Map Overhaul*

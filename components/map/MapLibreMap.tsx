@@ -1,8 +1,11 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import Map, { Marker, Popup, NavigationControl, MapRef } from 'react-map-gl/maplibre';
+import Map, { Source, Layer, Popup, NavigationControl } from 'react-map-gl/maplibre';
+import type { MapRef, MapMouseEvent } from 'react-map-gl/maplibre';
+import type { GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { clusterLayer, clusterCountLayer, unclusteredPointLayer } from './clusterLayers';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -60,7 +63,6 @@ export default function MapLibreMap({
 }: MapLibreMapProps) {
   const mapRef = useRef<MapRef | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
-  const [hoveredBusinessId, setHoveredBusinessId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -155,9 +157,58 @@ export default function MapLibreMap({
     );
   }, [businesses, userLat, userLng]);
 
-  const handleMarkerClick = useCallback((business: Business) => {
-    setSelectedBusiness(business);
-  }, []);
+  // Convert businesses to GeoJSON FeatureCollection for clustering
+  const geojsonData = useMemo((): GeoJSON.FeatureCollection<GeoJSON.Point> => ({
+    type: 'FeatureCollection',
+    features: businessesWithDistance.map(business => ({
+      type: 'Feature',
+      properties: {
+        id: business.id,
+        name: business.name,
+        category: business.category,
+        address: business.address,
+        city: business.city,
+        averageRating: business.averageRating,
+        reviewCount: business.reviewCount,
+        distance: business.distance,
+        tags: business.tags,
+        imageUrl: business.imageUrl
+      },
+      geometry: {
+        type: 'Point',
+        coordinates: [business.longitude, business.latitude]
+      }
+    }))
+  }), [businessesWithDistance]);
+
+  // Unified click handler for clusters and individual points
+  const onMapClick = useCallback(async (event: MapMouseEvent) => {
+    const feature = event.features?.[0];
+    if (!feature) {
+      setSelectedBusiness(null);
+      return;
+    }
+
+    // Cluster click - zoom to expand
+    const clusterId = feature.properties?.cluster_id;
+    if (clusterId !== undefined) {
+      const source = mapRef.current?.getSource('businesses') as GeoJSONSource;
+      const zoom = await source.getClusterExpansionZoom(clusterId);
+      mapRef.current?.easeTo({
+        center: (feature.geometry as GeoJSON.Point).coordinates as [number, number],
+        zoom,
+        duration: 500
+      });
+      return;
+    }
+
+    // Individual point click - show popup
+    const businessId = feature.properties?.id;
+    const business = businessesWithDistance.find(b => b.id === businessId);
+    if (business) {
+      setSelectedBusiness(business);
+    }
+  }, [businessesWithDistance]);
 
   const adjustColor = (color: string, amount: number): string => {
     const num = parseInt(color.replace('#', ''), 16);
@@ -191,6 +242,8 @@ export default function MapLibreMap({
               }}
               style={{ width: '100%', height: '100%' }}
               mapStyle={`https://api.maptiler.com/maps/streets-v2/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`}
+              interactiveLayerIds={['clusters', 'unclustered-point']}
+              onClick={onMapClick}
             >
               <NavigationControl position="top-right" />
 
@@ -234,69 +287,19 @@ export default function MapLibreMap({
                 />
               )}
 
-              {/* Business markers */}
-              {businessesWithDistance.map((business) => {
-                const category = getCategoryInfo(business.category);
-                const isHovered = hoveredBusinessId === business.id;
-
-                return (
-                  <Marker
-                    key={business.id}
-                    latitude={business.latitude}
-                    longitude={business.longitude}
-                    anchor="center"
-                    onClick={(e) => {
-                      e.originalEvent.stopPropagation();
-                      handleMarkerClick(business);
-                    }}
-                  >
-                    <div
-                      className="cursor-pointer transition-transform duration-200"
-                      style={{ transform: isHovered ? 'scale(1.25)' : 'scale(1)' }}
-                      onMouseEnter={() => setHoveredBusinessId(business.id)}
-                      onMouseLeave={() => setHoveredBusinessId(null)}
-                    >
-                      <div className="relative">
-                        <div
-                          style={{
-                            width: '44px',
-                            height: '44px',
-                            background: category.color,
-                            border: '4px solid white',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '22px',
-                            boxShadow: isHovered
-                              ? '0 6px 16px rgba(0,0,0,0.5)'
-                              : '0 4px 12px rgba(0,0,0,0.4)',
-                            position: 'relative',
-                            zIndex: 2,
-                          }}
-                        >
-                          {category.icon}
-                        </div>
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: `translate(-50%, -50%) scale(${isHovered ? 1.5 : 1})`,
-                            width: '44px',
-                            height: '44px',
-                            background: category.color,
-                            borderRadius: '50%',
-                            opacity: isHovered ? 0.4 : 0.3,
-                            zIndex: 1,
-                            transition: 'all 0.3s ease',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </Marker>
-                );
-              })}
+              {/* Business markers with clustering */}
+              <Source
+                id="businesses"
+                type="geojson"
+                data={geojsonData}
+                cluster={true}
+                clusterMaxZoom={14}
+                clusterRadius={50}
+              >
+                <Layer {...clusterLayer} />
+                <Layer {...clusterCountLayer} />
+                <Layer {...unclusteredPointLayer} />
+              </Source>
 
               {/* Popup for selected business */}
               {selectedBusiness && (

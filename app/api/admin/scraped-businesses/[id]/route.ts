@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
-import { db, isMockMode } from "@/lib/db";
+import { db } from "@/lib/db";
+import { isAdmin } from "@/lib/admin-auth";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
-
-// Helper to check admin authorization
-function checkAdminAuth(req: Request): { authorized: boolean; userId: string | null; userRole: string | null } {
-  let userId: string | null = null;
-  let userRole: string | null = null;
-
-  if (isMockMode()) {
-    userId = req.headers.get("x-user-id");
-    userRole = req.headers.get("x-user-role");
-  }
-
-  return { authorized: userRole === "ADMIN", userId, userRole };
-}
 
 // GET /api/admin/scraped-businesses/:id - Get single scraped business
 export async function GET(
@@ -23,8 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized } = checkAdminAuth(req);
-    if (!authorized) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -55,8 +42,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized } = checkAdminAuth(req);
-    if (!authorized) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -136,8 +122,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized } = checkAdminAuth(req);
-    if (!authorized) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -199,8 +184,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized } = checkAdminAuth(req);
-    if (!authorized) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

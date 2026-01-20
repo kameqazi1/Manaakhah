@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
-import { db, isMockMode } from "@/lib/db";
+import { db } from "@/lib/db";
+import { isAdmin } from "@/lib/admin-auth";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
-
-// Helper to check admin authorization
-function checkAdminAuth(req: Request): boolean {
-  if (isMockMode()) {
-    const userRole = req.headers.get("x-user-role");
-    return userRole === "ADMIN";
-  }
-  return false;
-}
 
 // GET /api/admin/users/:id - Get single user with details
 export async function GET(
@@ -19,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!checkAdminAuth(req)) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -86,7 +78,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!checkAdminAuth(req)) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -135,7 +127,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!checkAdminAuth(req)) {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

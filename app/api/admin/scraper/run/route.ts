@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { db, isMockMode } from "@/lib/db";
+import { db } from "@/lib/db";
 import { scrapeMuslimBusinesses } from "@/lib/scraper/scraper";
 import { ScraperConfig, DataSource, BusinessCategory, BusinessTag, VerificationLevel } from "@/lib/scraper/types";
+import { isAdmin } from "@/lib/admin-auth";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
@@ -9,16 +10,7 @@ export const dynamic = "force-dynamic";
 // POST /api/admin/scraper/run - Run web scraper with enhanced configuration
 export async function POST(req: Request) {
   try {
-    let userId: string | null = null;
-    let userRole: string | null = null;
-
-    if (isMockMode()) {
-      userId = req.headers.get("x-user-id");
-      userRole = req.headers.get("x-user-role");
-    }
-
-    // Check admin authorization
-    if (userRole !== "ADMIN") {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

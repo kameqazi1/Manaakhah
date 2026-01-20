@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { db, isMockMode } from "@/lib/db";
+import { db } from "@/lib/db";
+import { isAdmin } from "@/lib/admin-auth";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
@@ -7,16 +8,7 @@ export const dynamic = "force-dynamic";
 // GET /api/admin/stats - Get admin dashboard statistics
 export async function GET(req: Request) {
   try {
-    let userId: string | null = null;
-    let userRole: string | null = null;
-
-    if (isMockMode()) {
-      userId = req.headers.get("x-user-id");
-      userRole = req.headers.get("x-user-role");
-    }
-
-    // Check admin authorization
-    if (userRole !== "ADMIN") {
+    if (!(await isAdmin(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

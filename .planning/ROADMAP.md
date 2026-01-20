@@ -10,7 +10,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
+- [x] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
 - [ ] **Phase 2: Clustering** - Native GeoJSON clustering for performance with many businesses
 - [ ] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
 - [ ] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
@@ -41,7 +41,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 Plans:
 - [x] 01-01-PLAN.md — Install MapLibre, create MapLibreMap component with markers and popups
 - [x] 01-02-PLAN.md — Add user location marker, geolocation, and distance display
-- [ ] 01-03-PLAN.md — Add map view to search page (gap closure)
+- [x] 01-03-PLAN.md — Add map view to search page (gap closure)
 
 ---
 
@@ -49,11 +49,11 @@ Plans:
 **Goal**: Map performs smoothly with 50+ businesses by clustering nearby markers
 **Depends on**: Phase 1
 **Requirements**: MAP-02
-**Plans**: TBD
+**Plans**: 1 plan
 
 **Key Files**:
 - `components/map/MapLibreMap.tsx` (extend with clustering)
-- GeoJSON source configuration
+- `components/map/clusterLayers.ts` (new, layer style definitions)
 
 **Success Criteria** (what must be TRUE):
 1. Business markers cluster when zoomed out (radius ~50px)
@@ -62,7 +62,7 @@ Plans:
 4. Individual markers appear when sufficiently zoomed in (max zoom 14)
 
 Plans:
-- [ ] 02-01: Native MapLibre clustering implementation
+- [ ] 02-01-PLAN.md — Native MapLibre clustering implementation with Source/Layer architecture
 
 ---
 
@@ -174,8 +174,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. MapLibre Foundation | 2/3 | Gap closure pending | - |
-| 2. Clustering | 0/1 | Not started | - |
+| 1. MapLibre Foundation | 3/3 | Complete | 2026-01-19 |
+| 2. Clustering | 0/1 | Planned | - |
 | 3. Search-to-Map Sync | 0/2 | Not started | - |
 | 4. Map-to-Search Sync | 0/1 | Not started | - |
 | 5. Mobile Optimization | 0/1 | Not started | - |
@@ -185,4 +185,5 @@ Plans:
 *Roadmap created: 2026-01-19*
 *Phase 1 planned: 2026-01-19*
 *Gap closure plan added: 2026-01-19*
+*Phase 2 planned: 2026-01-19*
 *Milestone: v1.1 Map Overhaul*

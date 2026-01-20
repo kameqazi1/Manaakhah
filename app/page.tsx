@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { BusinessMap } from "@/components/map/BusinessMap";
 import { PrayerTimeWidget } from "@/components/prayer-times/PrayerTimeWidget";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, MapPin, Star, Clock, Users, Sparkles, Filter, Calendar, Heart, Building2 } from "lucide-react";
+import { Search, MapPin, Users, Sparkles, Calendar, Heart, Building2, Star } from "lucide-react";
 
 // Categories for filtering
 const categories = [
@@ -20,122 +19,8 @@ const categories = [
   { name: "Legal Services", icon: "⚖️" },
 ];
 
-// Featured businesses mock data
-const featuredBusinesses = [
-  {
-    id: "1",
-    name: "Al-Noor Halal Kitchen",
-    category: "Halal Food",
-    image: "/placeholder-food.jpg",
-    rating: 4.9,
-    reviews: 127,
-    location: "Fremont, CA",
-    description: "Authentic Middle Eastern cuisine with fresh halal ingredients",
-    priceRange: "$$",
-  },
-  {
-    id: "2",
-    name: "Bay Area Islamic Center",
-    category: "Masjids",
-    image: "/placeholder-masjid.jpg",
-    rating: 4.8,
-    reviews: 89,
-    location: "San Jose, CA",
-    description: "Community masjid with daily prayers and weekend programs",
-    priceRange: "Free",
-  },
-  {
-    id: "3",
-    name: "Reliable Auto Care",
-    category: "Auto Repair",
-    image: "/placeholder-auto.jpg",
-    rating: 4.7,
-    reviews: 64,
-    location: "Fremont, CA",
-    description: "Trusted Muslim-owned auto repair shop serving the community",
-    priceRange: "$$$",
-  },
-  {
-    id: "4",
-    name: "Quran Academy",
-    category: "Tutoring",
-    image: "/placeholder-tutoring.jpg",
-    rating: 4.9,
-    reviews: 156,
-    location: "Union City, CA",
-    description: "Professional Quran and Islamic studies tutoring",
-    priceRange: "$$",
-  },
-  {
-    id: "5",
-    name: "Halal Wellness Clinic",
-    category: "Health & Wellness",
-    image: "/placeholder-health.jpg",
-    rating: 4.6,
-    reviews: 42,
-    location: "Newark, CA",
-    description: "Female-friendly health services in a comfortable environment",
-    priceRange: "$$$",
-  },
-  {
-    id: "6",
-    name: "Amanah Legal Services",
-    category: "Legal Services",
-    image: "/placeholder-legal.jpg",
-    rating: 4.8,
-    reviews: 91,
-    location: "Fremont, CA",
-    description: "Immigration, family law, and business legal services",
-    priceRange: "$$$",
-  },
-];
-
-// Community events mock data
-const communityEvents = [
-  {
-    id: "1",
-    title: "Community Iftar Gathering",
-    date: "March 15, 2026",
-    time: "6:00 PM - 9:00 PM",
-    location: "Central Park Pavilion",
-    attendees: 234,
-    maxAttendees: 500,
-    organizer: "Bay Area Muslim Alliance",
-    isFree: true,
-    tags: ["Ramadan", "Community", "Family-Friendly"],
-  },
-  {
-    id: "2",
-    title: "Youth Career Fair",
-    date: "March 20, 2026",
-    time: "10:00 AM - 4:00 PM",
-    location: "Islamic Center of Fremont",
-    attendees: 87,
-    maxAttendees: 150,
-    organizer: "Muslim Youth Association",
-    isFree: true,
-    tags: ["Youth", "Career", "Networking"],
-  },
-  {
-    id: "3",
-    title: "Sisters Wellness Workshop",
-    date: "March 22, 2026",
-    time: "2:00 PM - 5:00 PM",
-    location: "Fremont Community Center",
-    attendees: 42,
-    maxAttendees: 60,
-    organizer: "Muslimah Support Group",
-    isFree: false,
-    tags: ["Sisters", "Wellness", "Workshop"],
-  },
-];
 
 export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-
-  const filteredBusinesses = featuredBusinesses.filter(
-    (business) => selectedCategory === "All" || business.category === selectedCategory
-  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -222,90 +107,50 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 mb-6">
                 <Sparkles className="w-6 h-6 text-green-600" />
-                <h2 className="text-3xl font-bold">Featured Businesses</h2>
+                <h2 className="text-3xl font-bold">Discover Businesses</h2>
               </div>
 
-              {/* Category Filter */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gray-50 p-4 rounded-lg mb-6">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-gray-600" />
-                  <span className="font-medium text-sm">Filter:</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {categories.map((category) => (
-                    <button
-                      key={category.name}
-                      onClick={() => setSelectedCategory(category.name)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        selectedCategory === category.name
-                          ? "bg-green-600 text-white"
-                          : "bg-white border border-gray-200 text-gray-700 hover:border-green-300"
-                      }`}
-                    >
-                      <span className="mr-1">{category.icon}</span>
-                      {category.name}
-                    </button>
-                  ))}
-                </div>
+              {/* Category Pills */}
+              <div className="flex flex-wrap gap-2 mb-8">
+                {categories.slice(1).map((category) => (
+                  <Link
+                    key={category.name}
+                    href={`/search?category=${encodeURIComponent(category.name)}`}
+                    className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-200 text-gray-700 hover:border-green-300 hover:bg-green-50 transition-colors"
+                  >
+                    <span className="mr-1">{category.icon}</span>
+                    {category.name}
+                  </Link>
+                ))}
               </div>
             </div>
 
-            {/* Business Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBusinesses.map((business) => (
-                <Link href={`/business/${business.id}`} key={business.id}>
-                  <Card className="group overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-green-100 to-emerald-50">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-6xl">{categories.find(c => c.name === business.category)?.icon || "🏪"}</span>
-                      </div>
-                      <span className="absolute top-3 left-3 bg-white text-gray-900 px-2 py-1 rounded-full text-xs font-medium">
-                        {business.category}
-                      </span>
-                      <button className="absolute top-3 right-3 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
-                        <Heart className="w-4 h-4 text-gray-600" />
-                      </button>
-                    </div>
-
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-lg leading-tight">
-                          {business.name}
-                        </h3>
-                        <div className="flex items-center gap-1 ml-2">
-                          <Star className="w-4 h-4 fill-yellow-400 stroke-yellow-400" />
-                          <span className="text-sm font-medium">{business.rating}</span>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{business.description}</p>
-
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>{business.location}</span>
-                      </div>
-                    </CardContent>
-
-                    <CardFooter className="p-4 pt-0 flex items-center justify-between">
-                      <span className="text-sm text-gray-500">
-                        {business.reviews} reviews
-                      </span>
-                      <span className="text-green-600 font-medium">
-                        {business.priceRange}
-                      </span>
-                    </CardFooter>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-
-            <div className="text-center pt-8">
-              <Link href="/search">
-                <Button size="lg">
-                  View All Businesses
-                </Button>
-              </Link>
-            </div>
+            {/* Empty State / Call to Action */}
+            <Card className="text-center p-12 bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
+              <div className="max-w-md mx-auto">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Building2 className="w-10 h-10 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Be the First to List Your Business</h3>
+                <p className="text-gray-600 mb-6">
+                  Help build the Muslim business directory in your area. List your business and connect with the community.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/register">
+                    <Button size="lg">
+                      <Building2 className="w-4 h-4 mr-2" />
+                      List Your Business
+                    </Button>
+                  </Link>
+                  <Link href="/search">
+                    <Button size="lg" variant="outline">
+                      <Search className="w-4 h-4 mr-2" />
+                      Browse Directory
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </Card>
           </TabsContent>
 
           {/* Events Tab */}
@@ -313,85 +158,31 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 mb-6">
                 <Sparkles className="w-6 h-6 text-green-600" />
-                <h2 className="text-3xl font-bold">Upcoming Community Events</h2>
+                <h2 className="text-3xl font-bold">Community Events</h2>
               </div>
               <p className="text-gray-600">
                 Discover and join local events happening in our community
               </p>
             </div>
 
-            {/* Event Cards */}
-            <div className="space-y-6">
-              {communityEvents.map((event) => (
-                <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="flex flex-col md:flex-row">
-                    {/* Event Image/Icon */}
-                    <div className="md:w-64 bg-gradient-to-br from-green-100 to-emerald-50 p-8 flex items-center justify-center">
-                      <div className="text-center">
-                        <Calendar className="w-12 h-12 text-green-600 mx-auto mb-2" />
-                        <p className="text-sm font-medium text-green-700">{event.date}</p>
-                      </div>
-                    </div>
-
-                    {/* Event Details */}
-                    <CardContent className="flex-1 p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-xl font-semibold mb-1">{event.title}</h3>
-                          <p className="text-sm text-gray-500">by {event.organizer}</p>
-                        </div>
-                        {event.isFree ? (
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                            Free
-                          </span>
-                        ) : (
-                          <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-                            Ticketed
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>{event.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          <span>{event.attendees}/{event.maxAttendees} attending</span>
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {event.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      <Button>Register Now</Button>
-                    </CardContent>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            <div className="text-center pt-8">
-              <Link href="/events">
-                <Button size="lg">
-                  View All Events
-                </Button>
-              </Link>
-            </div>
+            {/* Empty State */}
+            <Card className="text-center p-12 bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
+              <div className="max-w-md mx-auto">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Calendar className="w-10 h-10 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">No Events Yet</h3>
+                <p className="text-gray-600 mb-6">
+                  Community events will appear here. Check back soon for upcoming gatherings, workshops, and celebrations.
+                </p>
+                <Link href="/events">
+                  <Button size="lg" variant="outline">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Browse Events
+                  </Button>
+                </Link>
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

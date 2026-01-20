@@ -129,10 +129,10 @@ export async function GET(
     ]);
 
     // Get total counts
-    const totalViews = viewsData.reduce((sum, v) => sum + v._count.id, 0);
-    const totalBookings = bookingsData.reduce((sum, b) => sum + b._count.id, 0);
+    const totalViews = viewsData.reduce((sum: number, v: any) => sum + v._count.id, 0);
+    const totalBookings = bookingsData.reduce((sum: number, b: any) => sum + b._count.id, 0);
     const completedBookings =
-      bookingsData.find((b) => b.status === "COMPLETED")?._count.id || 0;
+      bookingsData.find((b: any) => b.status === "COMPLETED")?._count.id || 0;
 
     // Calculate conversion rate
     const conversionRate =
@@ -187,24 +187,24 @@ export async function GET(
         viewsGrowth: viewsGrowth ? parseFloat(viewsGrowth) : null,
         bookingsGrowth: bookingsGrowth ? parseFloat(bookingsGrowth) : null,
       },
-      viewsBySource: viewsData.map((v) => ({
+      viewsBySource: viewsData.map((v: any) => ({
         source: v.source,
         count: v._count.id,
         percentage: ((v._count.id / totalViews) * 100).toFixed(1),
       })),
-      bookingsByStatus: bookingsData.map((b) => ({
+      bookingsByStatus: bookingsData.map((b: any) => ({
         status: b.status,
         count: b._count.id,
       })),
       demographics: {
         byDevice: demographicsData
-          .filter((d) => d.deviceType)
-          .map((d) => ({
+          .filter((d: any) => d.deviceType)
+          .map((d: any) => ({
             device: d.deviceType,
             count: d._count.id,
           })),
       },
-      trend: snapshots.map((s) => ({
+      trend: snapshots.map((s: any) => ({
         date: s.date,
         views: s.views,
         bookings: s.bookings,

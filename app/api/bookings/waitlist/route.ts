@@ -87,7 +87,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      waitlist: waitlist.map((w) => ({
+      waitlist: waitlist.map((w: any) => ({
         id: w.id,
         position: w.position,
         notifiedAt: w.notifiedAt,

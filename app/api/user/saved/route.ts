@@ -70,7 +70,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      savedBusinesses: savedBusinesses.map((sb) => ({
+      savedBusinesses: savedBusinesses.map((sb: any) => ({
         id: sb.id,
         notes: sb.notes,
         createdAt: sb.createdAt,

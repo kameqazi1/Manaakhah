@@ -117,7 +117,7 @@ export async function GET(req: Request) {
     ]);
 
     return NextResponse.json({
-      campaigns: campaigns.map((c) => ({
+      campaigns: campaigns.map((c: any) => ({
         id: c.id,
         title: c.title,
         description: c.description?.slice(0, 200) + (c.description?.length > 200 ? "..." : ""),

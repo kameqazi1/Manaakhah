@@ -127,7 +127,7 @@ export async function GET(
     });
 
     return NextResponse.json({
-      staff: staffRoles.map((sr) => ({
+      staff: staffRoles.map((sr: any) => ({
         id: sr.id,
         role: sr.role,
         permissions: sr.permissions,

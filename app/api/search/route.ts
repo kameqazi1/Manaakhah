@@ -122,20 +122,20 @@ export async function GET(req: Request) {
 
     // Calculate distance and filter by exact radius
     const resultsWithDistance = businesses
-      .map((b) => ({
+      .map((b: any) => ({
         ...b,
         distance: calculateDistance(lat, lng, b.latitude, b.longitude),
         reviewCount: b._count.reviews,
       }))
-      .filter((b) => b.distance <= radius);
+      .filter((b: any) => b.distance <= radius);
 
     // Sort by distance if requested
     if (sortBy === "distance") {
-      resultsWithDistance.sort((a, b) => a.distance - b.distance);
+      resultsWithDistance.sort((a: any, b: any) => a.distance - b.distance);
     }
 
     // Check open now status
-    const results = resultsWithDistance.map((b) => ({
+    const results = resultsWithDistance.map((b: any) => ({
       ...b,
       isOpen: openNow ? isBusinessOpen(b.hours) : undefined,
     }));

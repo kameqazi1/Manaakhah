@@ -58,7 +58,7 @@ export async function GET(req: Request) {
     ]);
 
     return NextResponse.json({
-      channels: channels.map((c) => ({
+      channels: channels.map((c: any) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,

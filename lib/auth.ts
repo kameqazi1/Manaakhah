@@ -243,7 +243,7 @@ export const authConfig: NextAuthConfig = {
         }
 
         // If user exists but doesn't have this OAuth provider linked
-        if (existingUser && !existingUser.accounts.some(a => a.provider === account.provider)) {
+        if (existingUser && !existingUser.accounts.some((a: any) => a.provider === account.provider)) {
           // Create pending link token
           const token = crypto.randomBytes(32).toString("hex");
           const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours

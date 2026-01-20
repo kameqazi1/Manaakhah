@@ -66,20 +66,20 @@ function LoginContent() {
           redirect: false,
         });
 
-        if (result?.error) {
-          if (result.error === "CredentialsSignin") {
+        if (!result?.ok || result?.error) {
+          if (result?.error === "CredentialsSignin") {
             setError("Invalid email or password");
-          } else if (result.error === "EMAIL_NOT_VERIFIED") {
+          } else if (result?.error === "EMAIL_NOT_VERIFIED") {
             setError("Please verify your email before signing in. Check your inbox for the verification link.");
           } else {
-            setError("An error occurred. Please try again.");
+            setError(result?.error || "An error occurred. Please try again.");
           }
           setLoading(false);
           return;
         }
 
-        router.push("/dashboard");
-        router.refresh();
+        // Success - redirect to dashboard
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       setError("An error occurred. Please try again.");

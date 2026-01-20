@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CATEGORIES, BUSINESS_TAGS } from './BusinessMap';
 import { UserLocationMarker } from './UserLocationMarker';
+import { SearchThisAreaButton } from './SearchThisAreaButton';
+import type { MapBounds } from '@/hooks/useMapSearch';
 
 interface Business {
   id: string;
@@ -34,6 +36,11 @@ interface MapLibreMapProps {
   userLat: number;
   userLng: number;
   radius: number;
+  // Map-to-search sync props
+  onBoundsChange?: (bounds: MapBounds) => void;
+  isStale?: boolean;
+  onSearchThisArea?: () => void;
+  isSearching?: boolean;
 }
 
 // Haversine formula for distance calculation in miles
@@ -61,12 +68,19 @@ export default function MapLibreMap({
   userLat,
   userLng,
   radius,
+  onBoundsChange,
+  isStale,
+  onSearchThisArea,
+  isSearching,
 }: MapLibreMapProps) {
   const mapRef = useRef<MapRef | null>(null);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+
+  // Track programmatic moves to prevent infinite loop
+  const isProgrammaticMove = useRef(false);
 
   // Request user's geolocation
   const requestUserLocation = useCallback(() => {
@@ -145,6 +159,9 @@ export default function MapLibreMap({
     // Add padding
     const padding = 0.01;
 
+    // Mark as programmatic move to prevent triggering onBoundsChange
+    isProgrammaticMove.current = true;
+
     mapRef.current.fitBounds(
       [
         [minLng - padding, minLat - padding],
@@ -157,6 +174,33 @@ export default function MapLibreMap({
       }
     );
   }, [businesses, userLat, userLng]);
+
+  // Handle map movement end
+  const handleMoveEnd = useCallback(() => {
+    // Check if this was a programmatic move
+    if (isProgrammaticMove.current) {
+      // Clear the flag after a short delay to ensure fitBounds animation is complete
+      setTimeout(() => {
+        isProgrammaticMove.current = false;
+      }, 0);
+      return;
+    }
+
+    // User-initiated move - report bounds change
+    if (!mapRef.current || !onBoundsChange) return;
+
+    const bounds = mapRef.current.getBounds();
+    if (!bounds) return;
+
+    const mapBounds: MapBounds = {
+      ne_lat: bounds.getNorthEast().lat.toFixed(6),
+      ne_lng: bounds.getNorthEast().lng.toFixed(6),
+      sw_lat: bounds.getSouthWest().lat.toFixed(6),
+      sw_lng: bounds.getSouthWest().lng.toFixed(6),
+    };
+
+    onBoundsChange(mapBounds);
+  }, [onBoundsChange]);
 
   // Convert businesses to GeoJSON FeatureCollection for clustering
   const geojsonData = useMemo((): GeoJSON.FeatureCollection<GeoJSON.Point> => ({
@@ -245,6 +289,7 @@ export default function MapLibreMap({
               mapStyle={`https://api.maptiler.com/maps/streets-v2/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`}
               interactiveLayerIds={['clusters', 'unclustered-point']}
               onClick={onMapClick}
+              onMoveEnd={handleMoveEnd}
             >
               <NavigationControl position="top-right" />
 
@@ -433,6 +478,16 @@ export default function MapLibreMap({
               {locationError && (
                 <div className="absolute bottom-4 left-4 z-10 bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded-lg text-sm">
                   {locationError}
+                </div>
+              )}
+
+              {/* Search this area button - shows when map has moved */}
+              {isStale && onSearchThisArea && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                  <SearchThisAreaButton
+                    onClick={onSearchThisArea}
+                    isLoading={isSearching}
+                  />
                 </div>
               )}
             </Map>

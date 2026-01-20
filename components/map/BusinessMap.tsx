@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CATEGORY_ICON_MAP } from "./icons/CategoryIcon";
 
 // Dynamically import MapLibreMap to avoid SSR issues with WebGL
 const MapLibreMap = dynamic(() => import("./MapLibreMap"), {
@@ -40,27 +42,27 @@ interface BusinessMapProps {
 }
 
 export const BUSINESS_TAGS = [
-  { value: "MUSLIM_OWNED", label: "Muslim Owned", icon: "🤝" },
-  { value: "HALAL_VERIFIED", label: "Halal Verified", icon: "✓" },
-  { value: "SISTERS_FRIENDLY", label: "Sisters Friendly", icon: "👭" },
-  { value: "KID_FRIENDLY", label: "Kid Friendly", icon: "👶" },
-  { value: "WHEELCHAIR_ACCESSIBLE", label: "Accessible", icon: "♿" },
-  { value: "PRAYER_SPACE", label: "Prayer Space", icon: "🕌" },
+  { value: "MUSLIM_OWNED", label: "Muslim Owned", iconPath: "/icons/other.png" },
+  { value: "HALAL_VERIFIED", label: "Halal Verified", iconPath: "/icons/halal-market.png" },
+  { value: "SISTERS_FRIENDLY", label: "Sisters Friendly", iconPath: "/icons/other.png" },
+  { value: "KID_FRIENDLY", label: "Kid Friendly", iconPath: "/icons/other.png" },
+  { value: "WHEELCHAIR_ACCESSIBLE", label: "Accessible", iconPath: "/icons/other.png" },
+  { value: "PRAYER_SPACE", label: "Prayer Space", iconPath: "/icons/mosque.png" },
 ];
 
 export const CATEGORIES = [
-  { value: "ALL", label: "All Categories", icon: "📍", color: "#6B7280" },
-  { value: "RESTAURANT", label: "Restaurant", icon: "🍽️", color: "#EF4444" },
-  { value: "HALAL_MARKET", label: "Halal Market", icon: "🛒", color: "#10B981" },
-  { value: "MASJID", label: "Masjid", icon: "🕌", color: "#8B5CF6" },
-  { value: "AUTO_REPAIR", label: "Auto Repair", icon: "🔧", color: "#F97316" },
-  { value: "TUTORING", label: "Tutoring", icon: "📚", color: "#3B82F6" },
-  { value: "HEALTH_WELLNESS", label: "Health & Wellness", icon: "⚕️", color: "#EC4899" },
-  { value: "LEGAL_SERVICES", label: "Legal", icon: "⚖️", color: "#6366F1" },
-  { value: "BARBER_SALON", label: "Barber/Salon", icon: "✂️", color: "#EAB308" },
-  { value: "PLUMBING", label: "Plumbing", icon: "🚰", color: "#06B6D4" },
-  { value: "ELECTRICAL", label: "Electrical", icon: "⚡", color: "#F59E0B" },
-  { value: "REAL_ESTATE", label: "Real Estate", icon: "🏠", color: "#14B8A6" },
+  { value: "ALL", label: "All Categories", iconPath: "/icons/all-categories.png", color: "#6B7280" },
+  { value: "RESTAURANT", label: "Restaurant", iconPath: "/icons/restaurant.png", color: "#EF4444" },
+  { value: "HALAL_MARKET", label: "Halal Market", iconPath: "/icons/halal-market.png", color: "#10B981" },
+  { value: "MASJID", label: "Masjid", iconPath: "/icons/mosque.png", color: "#8B5CF6" },
+  { value: "AUTO_REPAIR", label: "Auto Repair", iconPath: "/icons/car-repair.png", color: "#F97316" },
+  { value: "TUTORING", label: "Tutoring", iconPath: "/icons/tutoring.png", color: "#3B82F6" },
+  { value: "HEALTH_WELLNESS", label: "Health & Wellness", iconPath: "/icons/health-wellness.png", color: "#EC4899" },
+  { value: "LEGAL_SERVICES", label: "Legal", iconPath: "/icons/legal.png", color: "#6366F1" },
+  { value: "BARBER_SALON", label: "Barber/Salon", iconPath: "/icons/barber.png", color: "#EAB308" },
+  { value: "PLUMBING", label: "Plumbing", iconPath: "/icons/plumbing.png", color: "#06B6D4" },
+  { value: "ELECTRICAL", label: "Electrical", iconPath: "/icons/electrical.png", color: "#F59E0B" },
+  { value: "REAL_ESTATE", label: "Real Estate", iconPath: "/icons/real-estate.png", color: "#14B8A6" },
 ];
 
 export function BusinessMap({ userLat = 37.5485, userLng = -121.9886, radius = 10 }: BusinessMapProps) {
@@ -160,13 +162,19 @@ export function BusinessMap({ userLat = 37.5485, userLng = -121.9886, radius = 1
                     <button
                       key={cat.value}
                       onClick={() => setSelectedCategory(cat.value)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-all flex items-center gap-1.5 ${
                         selectedCategory === cat.value
                           ? "bg-primary text-white border-primary"
                           : "bg-white border-gray-300 hover:border-primary"
                       }`}
                     >
-                      <span className="mr-1">{cat.icon}</span>
+                      <Image
+                        src={cat.iconPath}
+                        alt={cat.label}
+                        width={16}
+                        height={16}
+                        className="flex-shrink-0"
+                      />
                       {cat.label}
                     </button>
                   ))}
@@ -181,13 +189,19 @@ export function BusinessMap({ userLat = 37.5485, userLng = -121.9886, radius = 1
                     <button
                       key={tag.value}
                       onClick={() => toggleTag(tag.value)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-all flex items-center gap-1.5 ${
                         selectedTags.includes(tag.value)
                           ? "bg-green-500 text-white border-green-500"
                           : "bg-white border-gray-300 hover:border-green-500"
                       }`}
                     >
-                      <span className="mr-1">{tag.icon}</span>
+                      <Image
+                        src={tag.iconPath}
+                        alt={tag.label}
+                        width={16}
+                        height={16}
+                        className="flex-shrink-0"
+                      />
                       {tag.label}
                     </button>
                   ))}

@@ -5,6 +5,7 @@ import Map, { Source, Layer, Popup, NavigationControl } from 'react-map-gl/mapli
 import type { MapRef, MapMouseEvent } from 'react-map-gl/maplibre';
 import type { GeoJSONSource } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import Image from 'next/image';
 import { clusterLayer, clusterCountLayer, unclusteredPointLayer } from './clusterLayers';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -222,7 +223,7 @@ export default function MapLibreMap({
     return CATEGORIES.find(c => c.value === categoryValue) || {
       value: categoryValue,
       label: categoryValue.replace(/_/g, ' '),
-      icon: '📍',
+      iconPath: '/icons/other.png',
       color: '#6B7280'
     };
   };
@@ -323,12 +324,17 @@ export default function MapLibreMap({
                       />
                     ) : (
                       <div
-                        className="w-full h-[150px] flex items-center justify-center text-5xl"
+                        className="w-full h-[150px] flex items-center justify-center"
                         style={{
                           background: `linear-gradient(135deg, ${getCategoryInfo(selectedBusiness.category).color} 0%, ${adjustColor(getCategoryInfo(selectedBusiness.category).color, -20)} 100%)`
                         }}
                       >
-                        {getCategoryInfo(selectedBusiness.category).icon}
+                        <Image
+                          src={getCategoryInfo(selectedBusiness.category).iconPath}
+                          alt={getCategoryInfo(selectedBusiness.category).label}
+                          width={64}
+                          height={64}
+                        />
                       </div>
                     )}
 
@@ -336,10 +342,15 @@ export default function MapLibreMap({
                       {/* Header with icon and name */}
                       <div className="flex items-start gap-3 mb-3">
                         <div
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ background: getCategoryInfo(selectedBusiness.category).color }}
                         >
-                          {getCategoryInfo(selectedBusiness.category).icon}
+                          <Image
+                            src={getCategoryInfo(selectedBusiness.category).iconPath}
+                            alt={getCategoryInfo(selectedBusiness.category).label}
+                            width={20}
+                            height={20}
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 leading-tight mb-1">
@@ -373,9 +384,15 @@ export default function MapLibreMap({
                             return (
                               <span
                                 key={tagValue}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-medium"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-700 rounded-xl text-xs font-medium"
                               >
-                                {tag.icon} {tag.label}
+                                <Image
+                                  src={tag.iconPath}
+                                  alt={tag.label}
+                                  width={14}
+                                  height={14}
+                                />
+                                {tag.label}
                               </span>
                             );
                           })}
@@ -383,18 +400,23 @@ export default function MapLibreMap({
                       )}
 
                       {/* Address and distance */}
-                      <p className="text-sm text-gray-600 mb-3">
-                        <span className="mr-1">📍</span>
-                        {selectedBusiness.address}, {selectedBusiness.city}
+                      <div className="text-sm text-gray-600 mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <Image
+                            src="/icons/all-categories.png"
+                            alt="Location"
+                            width={14}
+                            height={14}
+                            className="flex-shrink-0"
+                          />
+                          <span>{selectedBusiness.address}, {selectedBusiness.city}</span>
+                        </div>
                         {selectedBusiness.distance !== undefined && (
-                          <>
-                            <br />
-                            <span className="text-gray-500">
-                              📏 {selectedBusiness.distance.toFixed(1)} miles away
-                            </span>
-                          </>
+                          <p className="text-gray-500 mt-1 ml-5">
+                            {selectedBusiness.distance.toFixed(1)} miles away
+                          </p>
                         )}
-                      </p>
+                      </div>
 
                       {/* View Details button */}
                       <Link href={`/business/${selectedBusiness.id}`}>
@@ -482,9 +504,15 @@ export default function MapLibreMap({
                         return tagInfo ? (
                           <span
                             key={tagValue}
-                            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium"
+                            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium inline-flex items-center gap-1.5"
                           >
-                            {tagInfo.icon} {tagInfo.label}
+                            <Image
+                              src={tagInfo.iconPath}
+                              alt={tagInfo.label}
+                              width={16}
+                              height={16}
+                            />
+                            {tagInfo.label}
                           </span>
                         ) : null;
                       })}

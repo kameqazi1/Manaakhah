@@ -212,7 +212,7 @@ export default function LeafletMap({
     businesses.forEach((business) => {
       const category = CATEGORIES.find((c) => c.value === business.category);
       const categoryColor = category?.color || "#6B7280";
-      const categoryIcon = category?.icon || "📍";
+      const categoryIconPath = category?.iconPath || "/icons/other.png";
 
       // Create custom marker icon
       const icon = L.divIcon({
@@ -228,12 +228,11 @@ export default function LeafletMap({
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 22px;
               box-shadow: 0 4px 12px rgba(0,0,0,0.4);
               transition: all 0.3s ease;
               position: relative;
               z-index: 2;
-            " class="marker-inner">${categoryIcon}</div>
+            " class="marker-inner"><img src="${categoryIconPath}" alt="" style="width: 22px; height: 22px;" /></div>
             <div style="
               position: absolute;
               top: 50%;
@@ -382,8 +381,8 @@ export default function LeafletMap({
             style="width: 100%; height: 150px; object-fit: cover;"
           />
         ` : `
-          <div style="width: 100%; height: 150px; background: linear-gradient(135deg, ${category?.color || '#6B7280'} 0%, ${adjustColor(category?.color || '#6B7280', -20)} 100%); display: flex; align-items: center; justify-content: center; font-size: 48px;">
-            ${category?.icon || '📍'}
+          <div style="width: 100%; height: 150px; background: linear-gradient(135deg, ${category?.color || '#6B7280'} 0%, ${adjustColor(category?.color || '#6B7280', -20)} 100%); display: flex; align-items: center; justify-content: center;">
+            <img src="${category?.iconPath || '/icons/other.png'}" alt="" style="width: 48px; height: 48px;" />
           </div>
         `}
 
@@ -397,9 +396,8 @@ export default function LeafletMap({
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 18px;
               flex-shrink: 0;
-            ">${category?.icon || '📍'}</div>
+            "><img src="${category?.iconPath || '/icons/other.png'}" alt="" style="width: 18px; height: 18px;" /></div>
             <div style="flex: 1; min-width: 0;">
               <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #111827; line-height: 1.3;">
                 ${business.name}
@@ -436,15 +434,15 @@ export default function LeafletMap({
                   font-size: 11px;
                   font-weight: 500;
                 ">
-                  ${tag?.icon} ${tag?.label}
+                  <img src="${tag?.iconPath}" alt="" style="width: 12px; height: 12px;" /> ${tag?.label}
                 </span>
               `).join('')}
             </div>
           ` : ''}
 
           <p style="margin: 0 0 12px 0; font-size: 13px; color: #4B5563; line-height: 1.4;">
-            📍 ${business.address}, ${business.city}
-            ${business.distance !== undefined ? `<br/><span style="color: #6B7280;">📏 ${business.distance.toFixed(1)} miles away</span>` : ''}
+            <img src="/icons/all-categories.png" alt="" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle; margin-right: 4px;" />${business.address}, ${business.city}
+            ${business.distance !== undefined ? `<br/><span style="color: #6B7280; margin-left: 16px;">${business.distance.toFixed(1)} miles away</span>` : ''}
           </p>
 
           <a
@@ -558,9 +556,10 @@ export default function LeafletMap({
                         return tagInfo ? (
                           <span
                             key={tag}
-                            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium"
+                            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium inline-flex items-center gap-1.5"
                           >
-                            {tagInfo.icon} {tagInfo.label}
+                            <img src={tagInfo.iconPath} alt="" className="w-4 h-4" />
+                            {tagInfo.label}
                           </span>
                         ) : null;
                       })}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Search, Menu, X, ChevronDown, Building2, Calendar, Users, Bookmark } from "lucide-react";
+import { Search, Menu, X, ChevronDown, Building2, Calendar, Users, Bookmark, Camera, Scale, Heart, ClipboardList, TrendingUp, LayoutDashboard, Tag, Settings, CheckCircle, PlusCircle, Store, User, Star, BarChart3, CalendarDays, MessageCircle, Home } from "lucide-react";
 
 export function Header() {
   const { data: session } = useMockSession();
@@ -65,14 +65,14 @@ export function Header() {
                       </div>
                     </Link>
                     <Link href="/search/image" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">📷</span>
+                      <Camera className="w-4 h-4 text-gray-500" />
                       <div>
                         <div className="font-medium">Image Search</div>
                         <div className="text-xs text-gray-500">Search by photo</div>
                       </div>
                     </Link>
                     <Link href="/compare" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">⚖️</span>
+                      <Scale className="w-4 h-4 text-gray-500" />
                       <div>
                         <div className="font-medium">Compare</div>
                         <div className="text-xs text-gray-500">Side-by-side comparison</div>
@@ -80,7 +80,7 @@ export function Header() {
                     </Link>
                     <hr className="my-2" />
                     <Link href="/favorites" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">❤️</span>
+                      <Heart className="w-4 h-4 text-gray-500" />
                       <span>My Favorites</span>
                     </Link>
                     <Link href="/saved-searches" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
@@ -88,7 +88,7 @@ export function Header() {
                       <span>Saved Searches</span>
                     </Link>
                     <Link href="/lists" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">📋</span>
+                      <ClipboardList className="w-4 h-4 text-gray-500" />
                       <span>My Lists</span>
                     </Link>
                   </div>
@@ -114,7 +114,7 @@ export function Header() {
                 {activeDropdown === "community" && (
                   <div className="absolute left-0 mt-1 w-64 bg-white border rounded-xl shadow-lg py-2 z-50">
                     <Link href="/community-impact" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">💚</span>
+                      <Heart className="w-4 h-4 text-green-500" />
                       <div>
                         <div className="font-medium">Economic Impact</div>
                         <div className="text-xs text-gray-500">Track community growth</div>
@@ -128,11 +128,11 @@ export function Header() {
                       </div>
                     </Link>
                     <Link href="/prayer-times" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">🕌</span>
+                      <img src="/icons/mosque.png" alt="Prayer Times" className="w-4 h-4" />
                       <span>Prayer Times</span>
                     </Link>
                     <Link href="/trends" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                      <span className="text-lg">📈</span>
+                      <TrendingUp className="w-4 h-4 text-gray-500" />
                       <span>Trend Reports</span>
                     </Link>
                   </div>
@@ -156,45 +156,45 @@ export function Header() {
                       {isBusinessOwner ? (
                         <>
                           <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">📊</span>
+                            <LayoutDashboard className="w-4 h-4 text-gray-500" />
                             <div>
                               <div className="font-medium">Dashboard</div>
                               <div className="text-xs text-gray-500">Manage your business</div>
                             </div>
                           </Link>
                           <Link href="/dashboard/analytics" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">📈</span>
+                            <BarChart3 className="w-4 h-4 text-gray-500" />
                             <span>Analytics</span>
                           </Link>
                           <Link href="/dashboard/deals" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">🏷️</span>
+                            <Tag className="w-4 h-4 text-gray-500" />
                             <span>Deals & Offers</span>
                           </Link>
                           <Link href="/dashboard/services" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">📋</span>
+                            <ClipboardList className="w-4 h-4 text-gray-500" />
                             <span>Service Menu</span>
                           </Link>
                           <hr className="my-2" />
                           <Link href="/bookings" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">📆</span>
+                            <CalendarDays className="w-4 h-4 text-gray-500" />
                             <span>Bookings</span>
                           </Link>
                           <Link href="/messages" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">💬</span>
+                            <MessageCircle className="w-4 h-4 text-gray-500" />
                             <span>Messages</span>
                           </Link>
                         </>
                       ) : (
                         <>
                           <Link href="/claim-business" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">✅</span>
+                            <CheckCircle className="w-4 h-4 text-gray-500" />
                             <div>
                               <div className="font-medium">Claim Your Business</div>
                               <div className="text-xs text-gray-500">Verify ownership</div>
                             </div>
                           </Link>
                           <Link href="/business/register" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
-                            <span className="text-lg">➕</span>
+                            <PlusCircle className="w-4 h-4 text-gray-500" />
                             <div>
                               <div className="font-medium">Add Your Business</div>
                               <div className="text-xs text-gray-500">Get listed for free</div>
@@ -220,21 +220,26 @@ export function Header() {
                   </button>
                   {activeDropdown === "admin" && (
                     <div className="absolute left-0 mt-1 w-56 bg-white border rounded-xl shadow-lg py-2 z-50">
-                      <Link href="/admin" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                        🏠 Admin Dashboard
+                      <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Home className="w-4 h-4" />
+                        Admin Dashboard
                       </Link>
-                      <Link href="/admin/businesses" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                        🏪 Manage Businesses
+                      <Link href="/admin/businesses" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Store className="w-4 h-4" />
+                        Manage Businesses
                       </Link>
-                      <Link href="/admin/users" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                        👤 Manage Users
+                      <Link href="/admin/users" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <User className="w-4 h-4" />
+                        Manage Users
                       </Link>
-                      <Link href="/admin/reviews" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                        ⭐ Manage Reviews
+                      <Link href="/admin/reviews" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Star className="w-4 h-4" />
+                        Manage Reviews
                       </Link>
                       <hr className="my-2" />
-                      <Link href="/admin/settings" className="block px-4 py-2 text-sm hover:bg-gray-50">
-                        ⚙️ Settings
+                      <Link href="/admin/settings" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Settings className="w-4 h-4" />
+                        Settings
                       </Link>
                     </div>
                   )}

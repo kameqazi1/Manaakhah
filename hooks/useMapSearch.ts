@@ -2,7 +2,14 @@
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
+
+export interface MapBounds {
+  ne_lat: string;
+  ne_lng: string;
+  sw_lat: string;
+  sw_lng: string;
+}
 
 export interface MapSearchFilters {
   search: string;
@@ -47,6 +54,9 @@ export function useMapSearch(
   const router = useRouter();
   const pathname = usePathname();
 
+  // Stale state tracking for map-to-search sync
+  const [isStale, setIsStale] = useState(false);
+
   // Parse filters from URL
   const filters: MapSearchFilters = useMemo(
     () => ({
@@ -64,6 +74,24 @@ export function useMapSearch(
     }),
     [searchParams]
   );
+
+  // Current bounds from URL (represents last successful search)
+  const currentBounds: MapBounds | null = useMemo(() => {
+    if (filters.ne_lat && filters.ne_lng && filters.sw_lat && filters.sw_lng) {
+      return {
+        ne_lat: filters.ne_lat,
+        ne_lng: filters.ne_lng,
+        sw_lat: filters.sw_lat,
+        sw_lng: filters.sw_lng,
+      };
+    }
+    return null;
+  }, [filters.ne_lat, filters.ne_lng, filters.sw_lat, filters.sw_lng]);
+
+  // Reset isStale when filters change (new search was performed)
+  useEffect(() => {
+    setIsStale(false);
+  }, [filters]);
 
   // Update filters (merges with existing)
   const setFilters = useCallback(
@@ -83,6 +111,25 @@ export function useMapSearch(
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [searchParams, router, pathname]
+  );
+
+  // Search by bounds (for "Search this area" functionality)
+  const searchBounds = useCallback(
+    (bounds: MapBounds) => {
+      // Round to 6 decimal places for cleaner URLs
+      const roundedBounds = {
+        ne_lat: parseFloat(bounds.ne_lat).toFixed(6),
+        ne_lng: parseFloat(bounds.ne_lng).toFixed(6),
+        sw_lat: parseFloat(bounds.sw_lat).toFixed(6),
+        sw_lng: parseFloat(bounds.sw_lng).toFixed(6),
+      };
+      // Clear distance filter when searching by bounds (makes UX sense)
+      setFilters({
+        ...roundedBounds,
+        distance: "",
+      });
+    },
+    [setFilters]
   );
 
   // Fetch businesses with React Query
@@ -128,5 +175,10 @@ export function useMapSearch(
     businesses,
     isLoading,
     error,
+    // Map-to-search sync
+    isStale,
+    setIsStale,
+    searchBounds,
+    currentBounds,
   };
 }

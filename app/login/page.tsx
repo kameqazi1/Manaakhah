@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { signIn } from "next-auth/react";
 import { mockLogin } from "@/lib/mock-auth";
 import { useMockSession } from "@/components/mock-session-provider";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -58,20 +59,27 @@ function LoginContent() {
         // Redirect to dashboard
         router.push("/dashboard");
       } else {
-        // Real mode: API call
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+        // Real mode: Use NextAuth signIn
+        const result = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
         });
 
-        if (!response.ok) {
-          setError("Invalid email or password");
+        if (result?.error) {
+          if (result.error === "CredentialsSignin") {
+            setError("Invalid email or password");
+          } else if (result.error === "EMAIL_NOT_VERIFIED") {
+            setError("Please verify your email before signing in. Check your inbox for the verification link.");
+          } else {
+            setError("An error occurred. Please try again.");
+          }
           setLoading(false);
           return;
         }
 
         router.push("/dashboard");
+        router.refresh();
       }
     } catch (err) {
       setError("An error occurred. Please try again.");

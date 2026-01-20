@@ -13,7 +13,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 - [x] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
 - [x] **Phase 2: Clustering** - Native GeoJSON clustering for performance with many businesses
 - [x] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
-- [ ] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
+- [x] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
 - [ ] **Phase 5: Mobile Optimization** - Touch gestures, WebGL context recovery, touch targets
 - [ ] **Phase 6: Cleanup** - Remove Leaflet packages, bundle optimization
 
@@ -110,7 +110,7 @@ Plans:
 4. No infinite loops between map and search updates (300ms debounce)
 
 Plans:
-- [ ] 04-01-PLAN.md — Bidirectional sync with Search this area button
+- [x] 04-01-PLAN.md — Bidirectional sync with Search this area button
 
 ---
 
@@ -178,7 +178,7 @@ Plans:
 | 1. MapLibre Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Clustering | 1/1 | Complete | 2026-01-19 |
 | 3. Search-to-Map Sync | 2/2 | Complete | 2026-01-19 |
-| 4. Map-to-Search Sync | 0/1 | Planned | - |
+| 4. Map-to-Search Sync | 1/1 | Complete | 2026-01-19 |
 | 5. Mobile Optimization | 0/1 | Not started | - |
 | 6. Cleanup | 0/1 | Not started | - |
 
@@ -190,4 +190,5 @@ Plans:
 *Phase 3 planned: 2026-01-20*
 *Phase 3 complete: 2026-01-19*
 *Phase 4 planned: 2026-01-19*
+*Phase 4 complete: 2026-01-19*
 *Milestone: v1.1 Map Overhaul*

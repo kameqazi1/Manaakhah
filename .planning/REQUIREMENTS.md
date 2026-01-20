@@ -28,7 +28,7 @@ Requirements for the Map Overhaul milestone. Focus on must-have features only.
   - Filter changes reflected on map immediately
   - Implement useMapSearch hook for shared state
 
-- [ ] **MAP-04**: Map drag/zoom updates search results to visible area
+- [x] **MAP-04**: Map drag/zoom updates search results to visible area
   - "Search this area" button pattern (not aggressive auto-refresh)
   - 300ms debounce on map movements
   - URL reflects current map position for shareability
@@ -100,7 +100,7 @@ The following were identified as valuable but deferred to keep v1.1 focused:
 | MAP-01 | Phase 1 | Complete |
 | MAP-02 | Phase 2 | Complete |
 | MAP-03 | Phase 3 | Complete |
-| MAP-04 | Phase 4 | Pending |
+| MAP-04 | Phase 4 | Complete |
 | MAP-05 | Phase 1 | Complete |
 | MAP-06 | Phase 3 | Complete |
 | MAP-08 | Phase 5 | Pending |

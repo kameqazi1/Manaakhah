@@ -10,21 +10,9 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 
 ## Current State
 
-**Shipped:** v1 Fix Auth & Security (2026-01-19)
-**Codebase:** 41,848 lines of TypeScript across ~90 routes
-**Tech stack:** Next.js 16, NextAuth v5, Prisma, Resend, PostgreSQL
-
-## Current Milestone: v1.1 Map Overhaul
-
-**Goal:** Replace Leaflet with MapLibre GL JS and build a map-first browsing experience
-
-**Target features:**
-- Migrate from Leaflet to MapLibre GL JS (WebGL rendering, vector tiles)
-- Bidirectional search-map integration (search updates map, map updates results)
-- User location with "you are here" marker and distance filtering
-- Marker clustering for performance with many businesses
-- Better mobile gestures (pinch-to-zoom, smooth pan)
-- Map on homepage, search page, and dedicated /map exploration page
+**Shipped:** v1.1 Map Overhaul (2026-01-19)
+**Codebase:** ~44,000 lines of TypeScript across ~90 routes
+**Tech stack:** Next.js 16, NextAuth v5, Prisma, Resend, PostgreSQL, MapLibre GL JS
 
 ## Requirements
 
@@ -49,19 +37,20 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 - Safe OAuth account linking with email verification — v1
 - 2FA email delivery with real codes — v1
 - Staff invitation emails with branded templates — v1
+- MapLibre GL JS with WebGL vector tile rendering — v1.1
+- Native marker clustering with color-coded counts — v1.1
+- Search-to-map sync (fitBounds on filter change) — v1.1
+- Map-to-search sync ("Search this area" button) — v1.1
+- User location marker with pulse animation — v1.1
+- View mode toggle (list/map/split) on search page — v1.1
+- API bounds filtering (ne_lat, sw_lat, etc.) — v1.1
+- useMapSearch hook for shared state management — v1.1
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] **MAP-01**: Replace Leaflet with MapLibre GL JS for WebGL rendering
-- [ ] **MAP-02**: Implement marker clustering for performance with many businesses
-- [ ] **MAP-03**: Search results update map view (zoom to fit results)
-- [ ] **MAP-04**: Map drag/zoom updates search results to visible area
-- [ ] **MAP-05**: Show user's current location on map with distance filtering
-- [ ] **MAP-06**: Add map view toggle to search results page
-- [ ] **MAP-07**: Create dedicated /map page for full-screen exploration
-- [ ] **MAP-08**: Mobile-optimized gestures (pinch-zoom, smooth pan, touch targets)
+(None currently — milestone complete, next milestone to be defined)
 
 ### Out of Scope
 
@@ -73,6 +62,9 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 - Payment processing — Not needed for directory functionality
 - SMS 2FA — Removed in v1, adds cost/complexity without being in UI
 - 2FA login challenge UI — Backend ready, frontend needed (v2 candidate)
+- Mobile map gestures — Deferred from v1.1 to v1.2 (pinch-zoom, touch targets)
+- Leaflet package removal — Deferred from v1.1 to v1.2 (cleanup after migration tested)
+- Dedicated /map page — Deferred from v1.1 to v1.2
 
 ## Context
 
@@ -85,7 +77,8 @@ v1 shipped complete authentication with both modes working. Environment validati
 **Known limitations:**
 - 2FA login challenge flow incomplete (backend throws error, no UI to catch it)
 - Production login page uses API route instead of NextAuth signIn directly
-- Current map uses Leaflet (DOM-based) — slow with many markers, no vector tiles
+- Leaflet packages still in bundle (deferred cleanup to v1.2)
+- Hover state on map markers needs Layer-based approach (deferred to v1.2)
 
 ## Constraints
 
@@ -108,6 +101,12 @@ v1 shipped complete authentication with both modes working. Environment validati
 | 24-hour token expiration | Consistent across all verification tokens | Good |
 | Remove SMS 2FA completely | Not in UI, adds cost/complexity | Good |
 | Log but don't block mock headers | Security through obscurity | Good |
+| MapLibre GL JS over Leaflet | WebGL rendering, vector tiles, native clustering | Good |
+| react-map-gl/maplibre wrapper | React-friendly markers, popups, lifecycle | Good |
+| MapTiler free tier | 100K loads/month sufficient for dev/early prod | Good |
+| Native clustering (cluster=true) | No additional deps, handles all logic | Good |
+| isProgrammaticMove ref pattern | Prevents infinite loop between fitBounds and onMoveEnd | Good |
+| URL as source of truth | Shareable links, React Query auto-refetch | Good |
 
 ---
-*Last updated: 2026-01-19 after v1.1 milestone definition*
+*Last updated: 2026-01-19 after v1.1 milestone completion*

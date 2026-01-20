@@ -1,6 +1,6 @@
 # Codebase Structure
 
-**Analysis Date:** 2025-01-19
+**Analysis Date:** 2026-01-19
 
 ## Directory Layout
 
@@ -8,25 +8,25 @@
 Manaakhah/
 ├── app/                        # Next.js App Router pages and API routes
 │   ├── api/                    # API route handlers
-│   │   ├── admin/              # Admin-only endpoints
-│   │   ├── auth/               # Authentication endpoints
-│   │   ├── bookings/           # Booking management
-│   │   ├── business/           # Business owner endpoints
-│   │   ├── businesses/         # Public business endpoints
-│   │   ├── community/          # Community posts/comments
+│   │   ├── admin/              # Admin-only endpoints (stats, users, moderation)
+│   │   ├── auth/               # Authentication endpoints (login, register, verify)
+│   │   ├── bookings/           # Booking management CRUD
+│   │   ├── business/           # Business owner endpoints (analytics, deals)
+│   │   ├── businesses/         # Public business endpoints (list, detail)
+│   │   ├── community/          # Community posts and comments
 │   │   ├── islamic/            # Prayer times, donations
 │   │   ├── messages/           # Messaging system
 │   │   ├── notifications/      # User notifications
 │   │   ├── reviews/            # Review endpoints
 │   │   ├── search/             # Search functionality
-│   │   ├── upload/             # File uploads
+│   │   ├── upload/             # File uploads (Cloudinary)
 │   │   └── user/               # User profile endpoints
 │   ├── admin/                  # Admin dashboard pages
 │   ├── bookings/               # User bookings page
 │   ├── business/               # Business detail pages
-│   ├── community/              # Community forum
+│   ├── community/              # Community forum pages
 │   ├── dashboard/              # Business owner dashboard
-│   ├── favorites/              # User favorites
+│   ├── favorites/              # User favorites page
 │   ├── forum/                  # Forum pages
 │   ├── login/                  # Login page
 │   ├── messages/               # Messaging interface
@@ -34,29 +34,33 @@ Manaakhah/
 │   ├── register/               # Registration page
 │   ├── search/                 # Search pages
 │   ├── settings/               # User settings
-│   ├── layout.tsx              # Root layout
+│   ├── layout.tsx              # Root layout with providers
 │   ├── page.tsx                # Home page
 │   └── globals.css             # Global styles
 ├── components/                 # React components
-│   ├── map/                    # Map-related components
-│   ├── notifications/          # Notification components
+│   ├── map/                    # Map components (MapLibreMap)
+│   ├── notifications/          # Notification bell and list
 │   ├── prayer-times/           # Prayer time widget
 │   ├── reviews/                # Review components
+│   ├── search/                 # Search UI (ViewToggle, filters)
 │   ├── ui/                     # Shadcn/ui primitives
-│   ├── header.tsx              # Main header component
-│   ├── providers.tsx           # NextAuth provider
-│   ├── mock-session-provider.tsx # Mock auth provider
+│   ├── header.tsx              # Main header with navigation
+│   ├── providers.tsx           # NextAuth SessionProvider
+│   ├── mock-session-provider.tsx # Mock auth context
+│   ├── query-provider.tsx      # React Query provider
 │   ├── role-switcher.tsx       # Dev tool for role switching
 │   └── LanguageSwitcher.tsx    # Language selector
+├── hooks/                      # Custom React hooks
+│   └── useMapSearch.ts         # URL-synced business search
 ├── lib/                        # Shared utilities and services
 │   ├── auth/                   # Auth utilities
 │   │   └── two-factor.ts       # 2FA implementation
 │   ├── i18n/                   # Internationalization
-│   │   ├── translations.ts     # Translation strings
-│   │   └── LanguageContext.tsx # Language context
+│   │   ├── translations.ts     # Translation strings (en, ar, ur)
+│   │   └── LanguageContext.tsx # Language context provider
 │   ├── mock-data/              # Mock data system
 │   │   ├── client.ts           # Mock Prisma-like client
-│   │   ├── storage.ts          # In-memory storage
+│   │   ├── storage.ts          # In-memory storage with localStorage
 │   │   ├── types.ts            # Mock data types
 │   │   └── seed-data.ts        # Initial mock data
 │   ├── scraper/                # Business scraper
@@ -64,27 +68,30 @@ Manaakhah/
 │   │   ├── utils.ts            # Scraper utilities
 │   │   └── types.ts            # Scraper types
 │   ├── services/               # External service integrations
-│   │   ├── calendar-sync.ts    # Calendar integration
+│   │   ├── calendar-sync.ts    # Google/Apple calendar integration
 │   │   ├── push-notifications.ts # Push notification service
 │   │   └── review-authenticity.ts # Review verification
 │   ├── auth.ts                 # NextAuth configuration
 │   ├── cloudinary.ts           # Image upload service
-│   ├── constants.ts            # App constants
+│   ├── constants.ts            # App constants (categories, tags)
 │   ├── db.ts                   # Database client switcher
 │   ├── email.ts                # Email service (Resend)
-│   ├── mock-auth.ts            # Mock authentication
+│   ├── mock-auth.ts            # Mock authentication helpers
 │   ├── mock-session.ts         # Mock session utilities
 │   ├── prisma.ts               # Prisma client singleton
-│   └── utils.ts                # General utilities
+│   └── utils.ts                # General utilities (cn)
 ├── prisma/                     # Database schema
-│   └── schema.prisma           # Prisma schema definition
+│   └── schema.prisma           # Prisma schema (1771 lines, 50+ models)
 ├── public/                     # Static assets
+│   ├── icons/                  # App icons
+│   ├── manifest.json           # PWA manifest
+│   └── sw.js                   # Service worker
 ├── scripts/                    # Utility scripts
 │   └── seed.ts                 # Database seeding
 ├── types/                      # TypeScript declarations
 │   └── next-auth.d.ts          # NextAuth type extensions
-├── .env.local                  # Local environment variables
-├── .env.example                # Environment variable template
+├── .planning/                  # Project planning docs
+├── middleware.ts               # Security middleware
 ├── next.config.js              # Next.js configuration
 ├── tailwind.config.ts          # Tailwind CSS configuration
 ├── tsconfig.json               # TypeScript configuration
@@ -102,6 +109,7 @@ Manaakhah/
 - Purpose: Backend API endpoints organized by domain
 - Contains: Route handlers exporting GET, POST, PUT, DELETE functions
 - Subdirectories follow resource naming: `businesses/`, `bookings/`, `reviews/`
+- Pattern: Each route.ts exports named HTTP method functions
 
 **`app/admin/`:**
 - Purpose: Admin dashboard pages
@@ -116,12 +124,17 @@ Manaakhah/
 **`components/`:**
 - Purpose: Reusable React components
 - Contains: UI primitives (`ui/`), feature components, providers
-- Pattern: Components are client components if interactive, otherwise server components
+- Pattern: Components use "use client" if interactive
 
 **`components/ui/`:**
 - Purpose: Shadcn/ui primitive components
 - Contains: Button, Card, Input, Label, Badge, Select, Textarea, Tabs, Dropdown
 - Pattern: Styled with Tailwind CSS, variants via class-variance-authority
+
+**`hooks/`:**
+- Purpose: Custom React hooks for data fetching and state
+- Contains: `useMapSearch.ts` for URL-synced business search
+- Pattern: Combines React Query with URL state management
 
 **`lib/`:**
 - Purpose: Shared logic, services, and utilities
@@ -131,17 +144,17 @@ Manaakhah/
 **`lib/mock-data/`:**
 - Purpose: Development without database dependency
 - Contains: In-memory data client mimicking Prisma API
-- Usage: Activated via `USE_MOCK_DATA=true` environment variable
+- Usage: Activated via `NEXT_PUBLIC_USE_MOCK_DATA=true` environment variable
 
 **`lib/scraper/`:**
 - Purpose: Aggregate Muslim business data from external sources
 - Contains: Scraper logic, source adapters, confidence scoring utilities
-- Sources: Google Places, Yelp, Zabihah, HalalTrip, and more
+- Sources: Google Places, Yelp, Zabihah, HalalTrip
 
 **`prisma/`:**
 - Purpose: Database schema and migrations
 - Contains: `schema.prisma` defining all models, enums, relations
-- Key models: User, Business, Review, Booking, Message, CommunityPost
+- Key models: User, Business, Review, Booking, Message, CommunityPost, Deal, Event
 
 ## Key File Locations
 
@@ -149,22 +162,30 @@ Manaakhah/
 - `app/layout.tsx`: Root layout with providers and header
 - `app/page.tsx`: Home page with hero, map, featured businesses
 - `app/api/auth/[...nextauth]/route.ts`: NextAuth handlers
+- `middleware.ts`: Security middleware for API requests
 
 **Configuration:**
 - `next.config.js`: Next.js configuration
 - `tailwind.config.ts`: Tailwind CSS theming
-- `tsconfig.json`: TypeScript paths and settings
-- `prisma/schema.prisma`: Database schema (1700+ lines)
-- `.env.local`: Environment variables
+- `tsconfig.json`: TypeScript paths (`@/` alias)
+- `prisma/schema.prisma`: Database schema (1771 lines)
+- `.env.local`: Environment variables (not committed)
 
 **Core Logic:**
-- `lib/auth.ts`: NextAuth configuration with providers and callbacks
+- `lib/auth.ts`: NextAuth configuration with Google, Apple, credentials providers
 - `lib/db.ts`: Database client switcher (Prisma vs Mock)
 - `lib/email.ts`: Email templates and sending via Resend
-- `lib/scraper/scraper.ts`: Business scraping orchestration
+- `lib/constants.ts`: Business categories, tags, prayer times
 
-**Testing:**
-- No test files detected in current structure
+**Data Access:**
+- `lib/prisma.ts`: Prisma client singleton with lazy initialization
+- `lib/mock-data/client.ts`: Mock database client
+- `lib/mock-data/storage.ts`: localStorage-backed storage
+
+**Authentication:**
+- `lib/auth.ts`: NextAuth v5 configuration
+- `lib/mock-auth.ts`: Mock authentication for development
+- `lib/auth/two-factor.ts`: 2FA with TOTP/Email codes
 
 ## Naming Conventions
 
@@ -175,6 +196,7 @@ Manaakhah/
 - Components: `PascalCase.tsx` (e.g., `BusinessMap.tsx`, `NotificationBell.tsx`)
 - Utilities: `kebab-case.ts` (e.g., `mock-auth.ts`, `two-factor.ts`)
 - Types: `types.ts` within feature directories
+- Providers: `*-provider.tsx` or `*Provider.tsx`
 
 **Directories:**
 - Feature groups: `lowercase` (e.g., `bookings/`, `reviews/`, `admin/`)
@@ -183,9 +205,9 @@ Manaakhah/
 
 **Variables/Functions:**
 - Functions: `camelCase` (e.g., `fetchNearbyBusinesses`, `applyFilters`)
-- Constants: `SCREAMING_SNAKE_CASE` (e.g., `BUSINESS_TAGS`, `CATEGORIES`)
-- Types/Interfaces: `PascalCase` (e.g., `Business`, `MockSession`)
-- API routes export: Named functions matching HTTP methods (`GET`, `POST`, `PUT`, `DELETE`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `BUSINESS_TAGS`, `DISTANCE_OPTIONS`)
+- Types/Interfaces: `PascalCase` (e.g., `Business`, `MockSession`, `MapSearchFilters`)
+- API exports: Named HTTP methods (`GET`, `POST`, `PUT`, `DELETE`)
 
 ## Import Organization
 
@@ -213,15 +235,21 @@ Manaakhah/
 - Export named functions: `GET`, `POST`, `PUT`, `DELETE`
 - Use Zod for validation, `db` from `@/lib/db` for data access
 - Check auth via headers in mock mode or NextAuth in production
+- Add `export const dynamic = "force-dynamic"` for dynamic data
 
 **New Component:**
 - Add to `components/` or relevant subdirectory
 - Use "use client" directive for interactive components
-- Import UI primitives from `components/ui/`
+- Import UI primitives from `@/components/ui/`
 
 **New Feature Component:**
 - Create subdirectory in `components/[feature]/`
 - Example: `components/events/EventCard.tsx`
+
+**New Custom Hook:**
+- Add to `hooks/` directory
+- Name: `use[Feature].ts` (e.g., `useBookings.ts`)
+- Pattern: Combine React Query + URL state if needed
 
 **New Utility Function:**
 - Add to existing file in `lib/` if related
@@ -235,6 +263,7 @@ Manaakhah/
 - Add to `prisma/schema.prisma`
 - Add corresponding mock type in `lib/mock-data/types.ts`
 - Add mock client methods in `lib/mock-data/client.ts`
+- Run `npx prisma generate` after schema changes
 
 ## Special Directories
 
@@ -252,6 +281,7 @@ Manaakhah/
 - Purpose: Project planning and documentation
 - Generated: No (manual)
 - Committed: Yes
+- Contains: Codebase analysis, milestones, phases, research
 
 **`public/`:**
 - Purpose: Static files served at root URL
@@ -265,4 +295,4 @@ Manaakhah/
 
 ---
 
-*Structure analysis: 2025-01-19*
+*Structure analysis: 2026-01-19*

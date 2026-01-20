@@ -5,26 +5,38 @@
  * Uses lazy loading to avoid database connections during build time
  */
 
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === "true";
-
 // Helper to check if we're using mock data
-export const isMockMode = () => USE_MOCK_DATA;
+export const isMockMode = () => process.env.USE_MOCK_DATA === "true";
 
-// Lazy-loaded database client - only connects when actually used
+// Cached database client
+let _db: any = null;
+
+// Lazy-loaded database client - only connects when actually used at runtime
 function getDb() {
-  if (USE_MOCK_DATA) {
+  if (_db) return _db;
+
+  if (process.env.USE_MOCK_DATA === "true") {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { mockDb } = require("./mock-data/client");
-    return mockDb;
+    _db = mockDb;
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getPrisma } = require("./prisma");
-    return getPrisma();
+    _db = getPrisma();
   }
+  return _db;
 }
 
-// Proxy that lazily initializes the database client on first access
+// Proxy that lazily initializes the database client on first property access
 // This prevents any database connection during Vercel build time
 export const db = new Proxy({} as any, {
   get(_, prop) {
-    return getDb()[prop];
+    const client = getDb();
+    const value = client[prop];
+    // If it's a function, bind it to the client
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
   },
 });

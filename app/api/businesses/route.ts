@@ -76,6 +76,12 @@ export async function GET(req: Request) {
     const lng = searchParams.get("lng");
     const radius = searchParams.get("radius");
 
+    // Bounds-based filtering (for map viewport queries)
+    const ne_lat = searchParams.get("ne_lat");
+    const ne_lng = searchParams.get("ne_lng");
+    const sw_lat = searchParams.get("sw_lat");
+    const sw_lng = searchParams.get("sw_lng");
+
     const where: any = {
       status: status as any,
     };
@@ -98,6 +104,18 @@ export async function GET(req: Request) {
             in: tags,
           },
         },
+      };
+    }
+
+    // Bounds-based filtering (takes precedence over radius if all 4 params present)
+    if (ne_lat && ne_lng && sw_lat && sw_lng) {
+      where.latitude = {
+        gte: parseFloat(sw_lat),
+        lte: parseFloat(ne_lat),
+      };
+      where.longitude = {
+        gte: parseFloat(sw_lng),
+        lte: parseFloat(ne_lng),
       };
     }
 
@@ -156,8 +174,8 @@ export async function GET(req: Request) {
       return businessData;
     });
 
-    // Filter by radius if provided
-    if (lat && lng && radius) {
+    // Filter by radius if provided (skip if bounds filtering was used)
+    if (lat && lng && radius && !(ne_lat && ne_lng && sw_lat && sw_lng)) {
       const maxRadius = parseFloat(radius);
       businessesWithRating = businessesWithRating.filter(
         (b: any) => !b.distance || b.distance <= maxRadius

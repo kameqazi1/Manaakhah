@@ -23,7 +23,7 @@ Requirements for the Map Overhaul milestone. Focus on must-have features only.
 
 ### Search-Map Integration
 
-- [ ] **MAP-03**: Search results update map view (zoom to fit results)
+- [x] **MAP-03**: Search results update map view (zoom to fit results)
   - Map bounds fit to search results via fitBounds()
   - Filter changes reflected on map immediately
   - Implement useMapSearch hook for shared state
@@ -43,7 +43,7 @@ Requirements for the Map Overhaul milestone. Focus on must-have features only.
 
 ### Search Page Map
 
-- [ ] **MAP-06**: Add map view toggle to search results page
+- [x] **MAP-06**: Add map view toggle to search results page
   - Toggle between list view, map view, or split view
   - Map and list share same data source (useMapSearch hook)
   - URL-first state management
@@ -73,14 +73,14 @@ The following were identified as valuable but deferred to keep v1.1 focused:
 
 ### API Changes
 
-- [ ] **API-01**: Extend /api/businesses to accept viewport bounds
+- [x] **API-01**: Extend /api/businesses to accept viewport bounds
   - Add ne_lat, ne_lng, sw_lat, sw_lng query params
   - Prisma where clause: latitude/longitude between bounds
   - Maintain backward compatibility with existing radius params
 
 ### Architecture
 
-- [ ] **ARCH-01**: Implement useMapSearch hook
+- [x] **ARCH-01**: Implement useMapSearch hook
   - URL as single source of truth (Next.js useSearchParams)
   - React Query for data fetching and caching
   - Debounced URL updates on map movements
@@ -99,13 +99,13 @@ The following were identified as valuable but deferred to keep v1.1 focused:
 |-------------|-------|--------|
 | MAP-01 | Phase 1 | Complete |
 | MAP-02 | Phase 2 | Complete |
-| MAP-03 | Phase 3 | Pending |
+| MAP-03 | Phase 3 | Complete |
 | MAP-04 | Phase 4 | Pending |
 | MAP-05 | Phase 1 | Complete |
-| MAP-06 | Phase 3 | Pending |
+| MAP-06 | Phase 3 | Complete |
 | MAP-08 | Phase 5 | Pending |
-| API-01 | Phase 3 | Pending |
-| ARCH-01 | Phase 3 | Pending |
+| API-01 | Phase 3 | Complete |
+| ARCH-01 | Phase 3 | Complete |
 | CLEAN-01 | Phase 6 | Pending |
 
 **Coverage:**

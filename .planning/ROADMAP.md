@@ -12,7 +12,7 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 
 - [x] **Phase 1: MapLibre Foundation** - Replace Leaflet with MapLibre GL JS, add user location marker
 - [x] **Phase 2: Clustering** - Native GeoJSON clustering for performance with many businesses
-- [ ] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
+- [x] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
 - [ ] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
 - [ ] **Phase 5: Mobile Optimization** - Touch gestures, WebGL context recovery, touch targets
 - [ ] **Phase 6: Cleanup** - Remove Leaflet packages, bundle optimization
@@ -86,8 +86,8 @@ Plans:
 5. useMapSearch hook provides shared state between map and list components
 
 Plans:
-- [ ] 03-01-PLAN.md — API bounds extension and useMapSearch hook
-- [ ] 03-02-PLAN.md — Search page map integration and view toggles
+- [x] 03-01-PLAN.md — API bounds extension and useMapSearch hook
+- [x] 03-02-PLAN.md — Search page map integration and view toggles
 
 ---
 
@@ -176,7 +176,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. MapLibre Foundation | 3/3 | Complete | 2026-01-19 |
 | 2. Clustering | 1/1 | Complete | 2026-01-19 |
-| 3. Search-to-Map Sync | 0/2 | Planned | - |
+| 3. Search-to-Map Sync | 2/2 | Complete | 2026-01-19 |
 | 4. Map-to-Search Sync | 0/1 | Not started | - |
 | 5. Mobile Optimization | 0/1 | Not started | - |
 | 6. Cleanup | 0/1 | Not started | - |
@@ -187,4 +187,5 @@ Plans:
 *Gap closure plan added: 2026-01-19*
 *Phase 2 planned: 2026-01-19*
 *Phase 3 planned: 2026-01-20*
+*Phase 3 complete: 2026-01-19*
 *Milestone: v1.1 Map Overhaul*

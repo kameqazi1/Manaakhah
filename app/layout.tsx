@@ -5,6 +5,7 @@ import { MockSessionProvider } from "@/components/mock-session-provider";
 import { RoleSwitcher } from "@/components/role-switcher";
 import { Header } from "@/components/header";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { QueryProvider } from "@/components/query-provider";
 import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -82,13 +83,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={inter.className}>
-        <LanguageProvider>
-          <MockSessionProvider>
-            <Header />
-            <main>{children}</main>
-            <RoleSwitcher />
-          </MockSessionProvider>
-        </LanguageProvider>
+        <QueryProvider>
+          <LanguageProvider>
+            <MockSessionProvider>
+              <Header />
+              <main>{children}</main>
+              <RoleSwitcher />
+            </MockSessionProvider>
+          </LanguageProvider>
+        </QueryProvider>
         <Script
           id="register-sw"
           strategy="afterInteractive"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This milestone replaces the current Leaflet-based map with MapLibre GL JS to unlock WebGL-accelerated vector tile rendering, native clustering, and smoother mobile interactions. The migration proceeds in layers: foundation work establishes the new map library, followed by clustering for performance, then bidirectional search-map integration that unifies the currently siloed map and search experiences. Mobile optimization and cleanup complete the milestone. Each phase delivers testable functionality, with the core map working from Phase 1.
+This milestone replaces the current Leaflet-based map with MapLibre GL JS to unlock WebGL-accelerated vector tile rendering, native clustering, and smoother mobile interactions. The migration proceeds in layers: foundation work establishes the new map library, followed by clustering for performance, then bidirectional search-map integration that unifies the currently siloed map and search experiences. Each phase delivers testable functionality, with the core map working from Phase 1.
 
 ## Phases
 
@@ -14,8 +14,6 @@ This milestone replaces the current Leaflet-based map with MapLibre GL JS to unl
 - [x] **Phase 2: Clustering** - Native GeoJSON clustering for performance with many businesses
 - [x] **Phase 3: Search-to-Map Sync** - Search results update map bounds via useMapSearch hook
 - [x] **Phase 4: Map-to-Search Sync** - Map interactions update search results with "Search this area" button
-- [ ] **Phase 5: Mobile Optimization** - Touch gestures, WebGL context recovery, touch targets
-- [ ] **Phase 6: Cleanup** - Remove Leaflet packages, bundle optimization
 
 ## Phase Details
 
@@ -114,51 +112,6 @@ Plans:
 
 ---
 
-### Phase 5: Mobile Optimization
-**Goal**: Map interactions feel native on mobile devices
-**Depends on**: Phase 4
-**Requirements**: MAP-08
-**Plans**: TBD
-
-**Key Files**:
-- `components/map/MapLibreMap.tsx` (gesture configuration)
-- Touch target styling
-- WebGL context recovery handling
-
-**Success Criteria** (what must be TRUE):
-1. Pinch-to-zoom works smoothly on mobile
-2. Pan gestures feel responsive without scroll conflicts
-3. Marker touch targets are at least 44x44px
-4. WebGL context loss recovers gracefully (map reloads)
-
-Plans:
-- [ ] 05-01: Mobile gestures and WebGL recovery
-
----
-
-### Phase 6: Cleanup
-**Goal**: Leaflet removed, bundle optimized, migration complete
-**Depends on**: Phase 5
-**Requirements**: CLEAN-01
-**Plans**: TBD
-
-**Key Files**:
-- `package.json` (remove dependencies)
-- `components/map/LeafletMap.tsx` (delete)
-- Any remaining Leaflet imports
-
-**Success Criteria** (what must be TRUE):
-1. Leaflet packages removed (leaflet, react-leaflet, leaflet.markercluster, react-leaflet-cluster)
-2. mapbox-gl package removed (unused)
-3. Associated @types packages removed
-4. Bundle size verified (no duplicate map libraries)
-5. All map functionality works without Leaflet code
-
-Plans:
-- [ ] 06-01: Leaflet removal and bundle verification
-
----
-
 ## Phase Ordering Rationale
 
 1. **Foundation first (Phase 1)**: All subsequent work depends on MapLibre rendering correctly. SSR handling, tile provider setup, and basic map display must be validated before any sync work.
@@ -166,10 +119,6 @@ Plans:
 2. **Clustering before sync (Phase 2)**: Performance with many markers must be solved before adding dynamic data loading. Clustering is simpler to implement in isolation.
 
 3. **One-way sync before bidirectional (Phases 3-4)**: Search-to-map sync (Phase 3) validates the useMapSearch hook architecture with simpler one-way data flow. Map-to-search (Phase 4) adds the tricky reverse direction with debouncing and loop prevention.
-
-4. **Mobile after core (Phase 5)**: Mobile-specific issues (touch conflicts, WebGL context loss) need dedicated attention after core features work on desktop.
-
-5. **Cleanup last (Phase 6)**: Removing Leaflet only happens after complete migration is tested. This prevents regressions if issues are found during earlier phases.
 
 ## Progress
 
@@ -179,8 +128,6 @@ Plans:
 | 2. Clustering | 1/1 | Complete | 2026-01-19 |
 | 3. Search-to-Map Sync | 2/2 | Complete | 2026-01-19 |
 | 4. Map-to-Search Sync | 1/1 | Complete | 2026-01-19 |
-| 5. Mobile Optimization | 0/1 | Not started | - |
-| 6. Cleanup | 0/1 | Not started | - |
 
 ---
 *Roadmap created: 2026-01-19*
@@ -191,4 +138,5 @@ Plans:
 *Phase 3 complete: 2026-01-19*
 *Phase 4 planned: 2026-01-19*
 *Phase 4 complete: 2026-01-19*
+*Phases 5-6 removed: 2026-01-19*
 *Milestone: v1.1 Map Overhaul*

@@ -48,19 +48,13 @@ Requirements for the Map Overhaul milestone. Focus on must-have features only.
   - Map and list share same data source (useMapSearch hook)
   - URL-first state management
 
-### Mobile Experience
-
-- [ ] **MAP-08**: Mobile-optimized gestures (pinch-zoom, smooth pan, touch targets)
-  - WebGL rendering enables smooth pinch-to-zoom
-  - 44x44px minimum touch targets on markers
-  - Cooperative gestures option if scroll conflicts arise
-  - Handle WebGL context loss gracefully
-
 ## Deferred to v1.2+
 
 The following were identified as valuable but deferred to keep v1.1 focused:
 
 - **MAP-07**: Dedicated /map page for full-screen exploration
+- **MAP-08**: Mobile-optimized gestures (pinch-zoom, smooth pan, touch targets)
+- **CLEAN-01**: Remove Leaflet packages after migration complete
 - List-map hover sync (hovering card highlights marker)
 - URL state sync for complete shareable links
 - Smooth fly-to animations
@@ -86,13 +80,6 @@ The following were identified as valuable but deferred to keep v1.1 focused:
   - Debounced URL updates on map movements
   - Shared between MapView and ListView components
 
-### Cleanup
-
-- [ ] **CLEAN-01**: Remove Leaflet packages after migration complete
-  - leaflet, react-leaflet, leaflet.markercluster, react-leaflet-cluster
-  - mapbox-gl (unused)
-  - Associated @types packages
-
 ## Traceability
 
 | Requirement | Phase | Status |
@@ -103,15 +90,13 @@ The following were identified as valuable but deferred to keep v1.1 focused:
 | MAP-04 | Phase 4 | Complete |
 | MAP-05 | Phase 1 | Complete |
 | MAP-06 | Phase 3 | Complete |
-| MAP-08 | Phase 5 | Pending |
 | API-01 | Phase 3 | Complete |
 | ARCH-01 | Phase 3 | Complete |
-| CLEAN-01 | Phase 6 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 10 total
-- Mapped to phases: 10
-- Unmapped: 0
+- v1.1 requirements: 8 total (MAP-08, CLEAN-01 deferred to v1.2)
+- Mapped to phases: 8
+- Complete: 8
 
 ---
 *Requirements defined: 2026-01-19*

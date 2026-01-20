@@ -27,8 +27,9 @@ import {
   DEFAULT_LOCATION,
 } from "@/lib/constants";
 import { useMockSession } from "@/components/mock-session-provider";
-import { useMapSearch, type Business } from "@/hooks/useMapSearch";
+import { useMapSearch, type Business, type MapBounds } from "@/hooks/useMapSearch";
 import { ViewToggle, type ViewMode } from "@/components/search/ViewToggle";
+import { cn } from "@/lib/utils";
 
 function SearchContent() {
   const { data: session } = useMockSession();
@@ -39,7 +40,23 @@ function SearchContent() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   // Use the useMapSearch hook for URL-first state management
-  const { filters, setFilters, businesses, isLoading } = useMapSearch(userLocation);
+  const { filters, setFilters, businesses, isLoading, isStale, setIsStale, searchBounds } = useMapSearch(userLocation);
+
+  // Track current viewport bounds for "Search this area" functionality
+  const [viewportBounds, setViewportBounds] = useState<MapBounds | null>(null);
+
+  // Handle map bounds change (when user pans/zooms)
+  const handleBoundsChange = (bounds: MapBounds) => {
+    setViewportBounds(bounds);
+    setIsStale(true);
+  };
+
+  // Handle "Search this area" button click
+  const handleSearchThisArea = () => {
+    if (viewportBounds) {
+      searchBounds(viewportBounds);
+    }
+  };
 
   // Load favorites and recently viewed from localStorage
   useEffect(() => {
@@ -115,6 +132,11 @@ function SearchContent() {
       sort: "distance",
       priceRange: "",
       minRating: "",
+      // Clear bounds when clearing filters
+      ne_lat: null,
+      ne_lng: null,
+      sw_lat: null,
+      sw_lng: null,
     });
   };
 
@@ -315,7 +337,14 @@ function SearchContent() {
                     <label className="block text-sm font-medium mb-1">Distance</label>
                     <Select
                       value={filters.distance}
-                      onChange={(e) => setFilters({ distance: e.target.value })}
+                      onChange={(e) => setFilters({
+                        distance: e.target.value,
+                        // Clear bounds when switching back to radius mode
+                        ne_lat: null,
+                        ne_lng: null,
+                        sw_lat: null,
+                        sw_lng: null,
+                      })}
                     >
                       {DISTANCE_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -436,8 +465,11 @@ function SearchContent() {
 
             {viewMode === "split" ? (
               <div className="grid md:grid-cols-2 gap-6">
-                {/* List on left */}
-                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                {/* List on left - dims when stale */}
+                <div className={cn(
+                  "space-y-4 max-h-[600px] overflow-y-auto pr-2 transition-opacity duration-300",
+                  isStale ? "opacity-50" : "opacity-100"
+                )}>
                   {sortedBusinesses.map((business) => renderBusinessCard(business, true))}
                 </div>
                 {/* Map on right */}
@@ -447,6 +479,10 @@ function SearchContent() {
                     userLat={userLocation?.lat ?? 37.5485}
                     userLng={userLocation?.lng ?? -121.9886}
                     radius={parseInt(filters.distance) || 25}
+                    onBoundsChange={handleBoundsChange}
+                    isStale={isStale}
+                    onSearchThisArea={handleSearchThisArea}
+                    isSearching={isLoading}
                   />
                 </div>
               </div>
@@ -457,10 +493,17 @@ function SearchContent() {
                   userLat={userLocation?.lat ?? 37.5485}
                   userLng={userLocation?.lng ?? -121.9886}
                   radius={parseInt(filters.distance) || 25}
+                  onBoundsChange={handleBoundsChange}
+                  isStale={isStale}
+                  onSearchThisArea={handleSearchThisArea}
+                  isSearching={isLoading}
                 />
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={cn(
+                "grid md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300",
+                isStale ? "opacity-50" : "opacity-100"
+              )}>
                 {sortedBusinesses.map((business) => renderBusinessCard(business))}
               </div>
             )}

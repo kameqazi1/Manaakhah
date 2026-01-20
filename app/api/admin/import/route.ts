@@ -3,6 +3,9 @@ import { db, isMockMode } from "@/lib/db";
 import { importFromCSV, importFromJSON } from "@/lib/scraper/scraper";
 import { CSVImportRow, JSONImportData } from "@/lib/scraper/types";
 
+// Force dynamic rendering - prevents static analysis during build
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/import - Import businesses from CSV or JSON
 export async function POST(req: Request) {
   try {

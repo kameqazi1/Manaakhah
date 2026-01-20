@@ -3,6 +3,9 @@ import { db, isMockMode } from "@/lib/db";
 import { scrapeMuslimBusinesses } from "@/lib/scraper/scraper";
 import { ScraperConfig, DataSource, BusinessCategory, BusinessTag, VerificationLevel } from "@/lib/scraper/types";
 
+// Force dynamic rendering - prevents static analysis during build
+export const dynamic = "force-dynamic";
+
 // POST /api/admin/scraper/run - Run web scraper with enhanced configuration
 export async function POST(req: Request) {
   try {

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { db, isMockMode } from "@/lib/db";
 
+// Force dynamic rendering - prevents static analysis during build
+export const dynamic = "force-dynamic";
+
 // Helper to check admin authorization
 function checkAdminAuth(req: Request): boolean {
   if (isMockMode()) {

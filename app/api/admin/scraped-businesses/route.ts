@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { db, isMockMode } from "@/lib/db";
 
+// Force dynamic rendering - prevents static analysis during build
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/scraped-businesses - Get all scraped businesses
 export async function GET(req: Request) {
   try {

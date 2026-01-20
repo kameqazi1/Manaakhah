@@ -12,25 +12,26 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 // Determine validation mode
-const isProduction = process.env.NODE_ENV === "production";
-const isMockMode = process.env.USE_MOCK_DATA === "true";
+// Check both USE_MOCK_DATA variants - the NEXT_PUBLIC_ version is available at build time
+const isMockMode = process.env.USE_MOCK_DATA === "true" || process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export const env = createEnv({
   server: {
-    // Always required
-    NEXTAUTH_SECRET: z.string().min(32, "NEXTAUTH_SECRET must be at least 32 characters"),
+    // Always required (but allow shorter in mock mode for easier setup)
+    NEXTAUTH_SECRET: isMockMode
+      ? z.string().min(1, "NEXTAUTH_SECRET is required")
+      : z.string().min(32, "NEXTAUTH_SECRET must be at least 32 characters"),
     NEXTAUTH_URL: z.string().url().optional(),
 
-    // Required in production, optional in dev/mock mode
-    // Note: Using z.string().min(1) instead of z.string().url() because
-    // Prisma connection strings have special characters that may not pass URL validation
-    DATABASE_URL: isProduction && !isMockMode
-      ? z.string().min(1, "DATABASE_URL is required in production")
-      : z.string().optional(),
+    // Required in production non-mock mode only
+    // In mock mode, these are completely optional
+    DATABASE_URL: isMockMode
+      ? z.string().optional()
+      : z.string().min(1, "DATABASE_URL is required in production"),
 
-    RESEND_API_KEY: isProduction && !isMockMode
-      ? z.string().startsWith("re_", "RESEND_API_KEY must start with 're_'")
-      : z.string().optional(),
+    RESEND_API_KEY: isMockMode
+      ? z.string().optional()
+      : z.string().startsWith("re_", "RESEND_API_KEY must start with 're_'"),
 
     FROM_EMAIL: z.string().email().optional(),
 

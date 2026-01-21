@@ -372,37 +372,37 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  businesses         Business[]
-  staffRoles         StaffRole[]
-  reviews            Review[]
-  sentMessages       Message[]          @relation("SentMessages")
-  conversations      Conversation[]     @relation("CustomerConversations")
-  accounts           Account[]
-  sessions           Session[]
-  customerBookings   Booking[]          @relation("CustomerBookings")
-  postLikes          PostLike[]
-  posts              CommunityPost[]
-  postComments       PostComment[]
-  commentLikes       CommentLike[]
-  reviewReports      ReviewReport[]     @relation("ReportedReviews")
-  resolvedReports    ReviewReport[]     @relation("ResolvedReports")
-  reviewHelpful      ReviewHelpful[]
-  businessViews      BusinessView[]
-  notifications      Notification[]
-  activityLogs       ActivityLog[]
-  savedBusinesses    SavedBusiness[]
-  savedSearches      SavedSearch[]
-  businessLists      BusinessList[]
-  followedBusinesses BusinessFollower[]
-  followedUsers      UserFollow[]       @relation("Follower")
-  followers          UserFollow[]       @relation("Following")
-  eventRsvps         EventRsvp[]
-  pollVotes          PollVote[]
-  referralsSent      Referral[]         @relation("Referrer")
-  referralsReceived  Referral[]         @relation("Referred")
-  appeals            Appeal[]
-  reportedContent    ContentReport[]
-  postReports        PostReport[]
+  businesses          Business[]
+  staffRoles          StaffRole[]
+  reviews             Review[]
+  sentMessages        Message[]            @relation("SentMessages")
+  conversations       Conversation[]       @relation("CustomerConversations")
+  accounts            Account[]
+  sessions            Session[]
+  customerBookings    Booking[]            @relation("CustomerBookings")
+  postLikes           PostLike[]
+  posts               CommunityPost[]
+  postComments        PostComment[]
+  commentLikes        CommentLike[]
+  reviewReports       ReviewReport[]       @relation("ReportedReviews")
+  resolvedReports     ReviewReport[]       @relation("ResolvedReports")
+  reviewHelpful       ReviewHelpful[]
+  businessViews       BusinessView[]
+  notifications       Notification[]
+  activityLogs        ActivityLog[]
+  savedBusinesses     SavedBusiness[]
+  savedSearches       SavedSearch[]
+  businessLists       BusinessList[]
+  followedBusinesses  BusinessFollower[]
+  followedUsers       UserFollow[]         @relation("Follower")
+  followers           UserFollow[]         @relation("Following")
+  eventRsvps          EventRsvp[]
+  pollVotes           PollVote[]
+  referralsSent       Referral[]           @relation("Referrer")
+  referralsReceived   Referral[]           @relation("Referred")
+  appeals             Appeal[]
+  reportedContent     ContentReport[]
+  postReports         PostReport[]
   pendingAccountLinks PendingAccountLink[]
 
   @@index([email])
@@ -461,7 +461,7 @@ model PendingAccountLink {
   expires           DateTime
   createdAt         DateTime @default(now())
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
@@ -528,7 +528,7 @@ model Business {
   ramadanHours     Json? // Ramadan-specific hours
   temporaryClosure Json? // {isActive: true, reason: "", until: Date}
 
-  services        String[]
+  serviceList     String[] // Legacy: list of service names (use services relation for booking)
   amenities       String[] // WiFi, Parking, etc.
   languagesSpoken String[] // Languages staff can speak
 
@@ -615,6 +615,7 @@ model Business {
   conversations          Conversation[]
   events                 Event[]
   bookings               Booking[]
+  services               Service[]
   posts                  CommunityPost[]
   businessViews          BusinessView[]
   availability           BusinessAvailability[]
@@ -1049,6 +1050,7 @@ model Booking {
   businessId      String
   customerId      String
   serviceType     String
+  serviceId       String?
   services        Json? // Array of services for multi-service booking
   appointmentDate DateTime
   appointmentTime String
@@ -1094,6 +1096,7 @@ model Booking {
 
   business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   customer      User      @relation("CustomerBookings", fields: [customerId], references: [id])
+  service       Service?  @relation(fields: [serviceId], references: [id])
   review        Review?
   waitlistEntry Waitlist?
 
@@ -1132,6 +1135,28 @@ model AvailabilityException {
 
   @@unique([businessId, date])
   @@index([businessId])
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  description String?  @db.Text
+  price       Float
+  priceType   String   @default("fixed") // fixed, starting, hourly, custom
+  duration    Int // in minutes
+  category    String?
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([businessId])
+  @@index([businessId, isActive])
 }
 
 model Waitlist {

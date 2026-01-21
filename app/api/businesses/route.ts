@@ -278,7 +278,7 @@ export async function POST(req: Request) {
         phone: validatedData.phone,
         email: validatedData.email || null,
         website: validatedData.website || null,
-        services: validatedData.services,
+        serviceList: validatedData.services,
         hours: validatedData.hours || null,
         prayerTimes: validatedData.prayerTimes || null,
         jummahTime: validatedData.jummahTime || null,

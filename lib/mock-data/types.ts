@@ -74,7 +74,7 @@ export interface MockBusiness {
   email: string | null;
   website: string | null;
   hours: any;
-  services: string[];
+  serviceList: string[];
   status: BusinessStatus;
 
   priceRange?: PriceRange | null;

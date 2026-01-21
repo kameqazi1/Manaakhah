@@ -164,7 +164,7 @@ export const mockDb = {
         email: data.email || null,
         website: data.website || null,
         hours: data.hours || null,
-        services: data.services || [],
+        serviceList: data.serviceList || [],
         status: data.status || "DRAFT",
         priceRange: data.priceRange || null,
         hoursOfOperation: data.hoursOfOperation || null,

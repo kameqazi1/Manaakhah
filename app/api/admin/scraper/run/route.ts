@@ -141,7 +141,7 @@ export async function POST(req: Request) {
               verificationLevel: business.verificationLevel,
               averageRating: business.averageRating,
               totalReviews: business.totalReviews,
-              services: business.services,
+              serviceList: business.services,
               cuisineTypes: business.cuisineTypes,
               priceRange: business.priceRange,
             },

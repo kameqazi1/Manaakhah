@@ -13,6 +13,8 @@ import {
   ScrapedBusiness,
 } from "./types";
 
+import { db } from "@/lib/db";
+
 // ============================================================================
 // KEYWORD DATABASES
 // ============================================================================
@@ -657,6 +659,91 @@ export function checkForDuplicate(
     similarity: 0,
     matchType: "exact",
   };
+}
+
+/**
+ * Check for duplicate in both ScrapedBusiness and Business tables
+ * This prevents creating duplicate entries when a business already exists
+ */
+export async function checkForDuplicateInDatabase(
+  business: Partial<ScrapedBusiness>
+): Promise<{
+  isDuplicate: boolean;
+  existingId?: string;
+  matchType?: "scraped" | "business";
+  matchField?: "name_address" | "phone" | "name_city";
+}> {
+  // Build OR conditions for ScrapedBusiness check
+  const scrapedConditions: any[] = [];
+
+  if (business.name && business.address) {
+    scrapedConditions.push({
+      name: { equals: business.name, mode: "insensitive" },
+      address: { equals: business.address, mode: "insensitive" },
+    });
+  }
+
+  if (business.phone) {
+    const normalizedPhone = business.phone.replace(/\D/g, "");
+    if (normalizedPhone.length >= 10) {
+      scrapedConditions.push({ phone: business.phone });
+    }
+  }
+
+  // Check ScrapedBusiness table first
+  if (scrapedConditions.length > 0) {
+    const existingScraped = await db.scrapedBusiness.findFirst({
+      where: { OR: scrapedConditions },
+      select: { id: true, name: true, phone: true },
+    });
+
+    if (existingScraped) {
+      const matchField = existingScraped.phone === business.phone ? "phone" : "name_address";
+      return {
+        isDuplicate: true,
+        existingId: existingScraped.id,
+        matchType: "scraped",
+        matchField,
+      };
+    }
+  }
+
+  // Build OR conditions for Business table check
+  const businessConditions: any[] = [];
+
+  if (business.name && business.city) {
+    businessConditions.push({
+      name: { contains: business.name, mode: "insensitive" },
+      city: { equals: business.city, mode: "insensitive" },
+    });
+  }
+
+  if (business.phone) {
+    const normalizedPhone = business.phone.replace(/\D/g, "");
+    if (normalizedPhone.length >= 10) {
+      businessConditions.push({ phone: business.phone });
+    }
+  }
+
+  // Check Business table
+  if (businessConditions.length > 0) {
+    const existingBusiness = await db.business.findFirst({
+      where: { OR: businessConditions },
+      select: { id: true, name: true, phone: true },
+    });
+
+    if (existingBusiness) {
+      const matchField = existingBusiness.phone === business.phone ? "phone" : "name_city";
+      return {
+        isDuplicate: true,
+        existingId: existingBusiness.id,
+        matchType: "business",
+        matchField,
+      };
+    }
+  }
+
+  return { isDuplicate: false };
 }
 
 // ============================================================================

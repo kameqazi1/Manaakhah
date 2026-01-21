@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useMockSession } from "@/components/mock-session-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { validateBusinessEntry, ValidationResult } from "@/lib/scraper/validation";
 
 interface ScrapedBusiness {
   id: string;
@@ -18,12 +19,19 @@ interface ScrapedBusiness {
   zipCode: string;
   phone?: string;
   website?: string;
+  email?: string;
   description?: string;
   sourceUrl: string;
   scrapedAt: Date;
   claimStatus: string;
   reviewedAt?: Date;
   metadata: any;
+}
+
+// Helper to get validation result for a scraped business
+function getValidation(business: ScrapedBusiness): ValidationResult {
+  // Cast to the format expected by validateBusinessEntry
+  return validateBusinessEntry(business as any);
 }
 
 export default function ReviewQueuePage() {
@@ -184,6 +192,47 @@ export default function ReviewQueuePage() {
                             </span>
                             {getStatusBadge(business.claimStatus)}
                           </div>
+                          {/* Validation Score and Flags */}
+                          {(() => {
+                            const validation = getValidation(business);
+                            return (
+                              <div className="mt-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {/* Confidence Score Badge */}
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      validation.confidence >= 70
+                                        ? "bg-green-100 text-green-800"
+                                        : validation.confidence >= 50
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {validation.confidence}% confidence
+                                  </span>
+                                  {/* Low Quality Badge */}
+                                  {!validation.isLikelyBusiness && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                      Low Quality
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Validation Flags */}
+                                {validation.flags.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {validation.flags.map((flag, i) => (
+                                      <span
+                                        key={i}
+                                        className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800"
+                                      >
+                                        {flag.replace(/_/g, " ")}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 

@@ -20,6 +20,16 @@
 
 **Goal:** Users can browse a business's services and book an appointment through a visual calendar interface
 
+**Plans:** 6 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Add Service model to Prisma schema
+- [ ] 01-02-PLAN.md — Install react-day-picker and create booking utilities
+- [ ] 01-03-PLAN.md — Create Service API and Availability API routes
+- [ ] 01-04-PLAN.md — Migrate dashboard services page to use API
+- [ ] 01-05-PLAN.md — Create booking page and components
+- [ ] 01-06-PLAN.md — Verify booking flow end-to-end (checkpoint)
+
 **Must-Haves:**
 1. Service model and API for business services (name, duration, price, description)
 2. Business service management UI in owner dashboard
@@ -105,7 +115,7 @@
 
 | Phase | Status | Plans | Completed |
 |-------|--------|-------|-----------|
-| 1 | Not Started | 0 | 0 |
+| 1 | Planned | 6 | 0 |
 | 2 | Not Started | 0 | 0 |
 | 3 | Not Started | 0 | 0 |
 | 4 | Not Started | 0 | 0 |

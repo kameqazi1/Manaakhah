@@ -12,6 +12,9 @@ const emptyMockData: MockDatabase = {
   communityPosts: [],
   postComments: [],
   businessViews: [],
+  services: [],
+  businessAvailabilities: [],
+  availabilityExceptions: [],
 };
 
 /**
@@ -92,6 +95,18 @@ class MockStorage {
     return this.data.businessViews;
   }
 
+  getServices() {
+    return this.data.services;
+  }
+
+  getBusinessAvailabilities() {
+    return this.data.businessAvailabilities;
+  }
+
+  getAvailabilityExceptions() {
+    return this.data.availabilityExceptions;
+  }
+
   // Update the entire database
   setAll(data: MockDatabase) {
     this.data = data;
@@ -146,6 +161,21 @@ class MockStorage {
 
   setBusinessViews(views: typeof this.data.businessViews) {
     this.data.businessViews = views;
+    this.persist();
+  }
+
+  setServices(services: typeof this.data.services) {
+    this.data.services = services;
+    this.persist();
+  }
+
+  setBusinessAvailabilities(availabilities: typeof this.data.businessAvailabilities) {
+    this.data.businessAvailabilities = availabilities;
+    this.persist();
+  }
+
+  setAvailabilityExceptions(exceptions: typeof this.data.availabilityExceptions) {
+    this.data.availabilityExceptions = exceptions;
     this.persist();
   }
 

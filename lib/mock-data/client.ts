@@ -10,6 +10,9 @@ import type {
   MockCommunityPost,
   MockPostComment,
   MockBusinessView,
+  MockService,
+  MockBusinessAvailability,
+  MockAvailabilityException,
 } from "./types";
 
 /**
@@ -611,6 +614,207 @@ export const mockDb = {
       scraped[index] = { ...scraped[index], ...data };
       mockStorage.setScrapedBusinesses(scraped);
       return scraped[index];
+    },
+  },
+
+  service: {
+    findMany: ({ where, orderBy }: { where?: any; orderBy?: any } = {}) => {
+      let services = mockStorage.getServices();
+
+      if (where) {
+        if (where.businessId) services = services.filter((s) => s.businessId === where.businessId);
+        if (where.isActive !== undefined) services = services.filter((s) => s.isActive === where.isActive);
+        if (where.category) services = services.filter((s) => s.category === where.category);
+      }
+
+      // Handle array of orderBy
+      if (Array.isArray(orderBy)) {
+        services.sort((a, b) => {
+          for (const order of orderBy) {
+            const key = Object.keys(order)[0] as keyof MockService;
+            const dir = order[key];
+            const aVal = a[key];
+            const bVal = b[key];
+            if (aVal !== bVal) {
+              if (typeof aVal === "string" && typeof bVal === "string") {
+                return dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+              }
+              return dir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+            }
+          }
+          return 0;
+        });
+      } else if (orderBy) {
+        const key = Object.keys(orderBy)[0] as keyof MockService;
+        const dir = orderBy[key];
+        services.sort((a, b) => {
+          const aVal = a[key];
+          const bVal = b[key];
+          if (typeof aVal === "string" && typeof bVal === "string") {
+            return dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+          }
+          return dir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+        });
+      }
+
+      return services;
+    },
+
+    findUnique: ({ where }: { where: { id: string } }) => {
+      const services = mockStorage.getServices();
+      return services.find((s) => s.id === where.id) || null;
+    },
+
+    create: ({ data }: { data: Partial<MockService> }) => {
+      const services = mockStorage.getServices();
+      const newService: MockService = {
+        id: mockStorage.generateId("service"),
+        businessId: data.businessId!,
+        name: data.name!,
+        description: data.description || null,
+        price: data.price!,
+        priceType: data.priceType || "fixed",
+        duration: data.duration!,
+        category: data.category || null,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        isFeatured: data.isFeatured || false,
+        sortOrder: data.sortOrder || 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      services.push(newService);
+      mockStorage.setServices(services);
+      return newService;
+    },
+
+    update: ({ where, data }: { where: { id: string }; data: Partial<MockService> }) => {
+      const services = mockStorage.getServices();
+      const index = services.findIndex((s) => s.id === where.id);
+      if (index === -1) throw new Error("Service not found");
+      services[index] = { ...services[index], ...data, updatedAt: new Date() };
+      mockStorage.setServices(services);
+      return services[index];
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const services = mockStorage.getServices();
+      const filtered = services.filter((s) => s.id !== where.id);
+      const deleted = services.find((s) => s.id === where.id);
+      mockStorage.setServices(filtered);
+      return deleted || null;
+    },
+  },
+
+  businessAvailability: {
+    findUnique: ({ where }: { where: { id?: string; businessId_dayOfWeek?: { businessId: string; dayOfWeek: number } } }) => {
+      const availabilities = mockStorage.getBusinessAvailabilities();
+      if (where.id) {
+        return availabilities.find((a) => a.id === where.id) || null;
+      }
+      if (where.businessId_dayOfWeek) {
+        return availabilities.find(
+          (a) => a.businessId === where.businessId_dayOfWeek!.businessId && a.dayOfWeek === where.businessId_dayOfWeek!.dayOfWeek
+        ) || null;
+      }
+      return null;
+    },
+
+    findMany: ({ where }: { where?: { businessId?: string } } = {}) => {
+      let availabilities = mockStorage.getBusinessAvailabilities();
+      if (where?.businessId) {
+        availabilities = availabilities.filter((a) => a.businessId === where.businessId);
+      }
+      return availabilities;
+    },
+
+    create: ({ data }: { data: Partial<MockBusinessAvailability> }) => {
+      const availabilities = mockStorage.getBusinessAvailabilities();
+      const newAvailability: MockBusinessAvailability = {
+        id: mockStorage.generateId("avail"),
+        businessId: data.businessId!,
+        dayOfWeek: data.dayOfWeek!,
+        isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
+        startTime: data.startTime || "09:00",
+        endTime: data.endTime || "17:00",
+        slotDuration: data.slotDuration || 60,
+        bufferTime: data.bufferTime || 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      availabilities.push(newAvailability);
+      mockStorage.setBusinessAvailabilities(availabilities);
+      return newAvailability;
+    },
+
+    update: ({ where, data }: { where: { id: string }; data: Partial<MockBusinessAvailability> }) => {
+      const availabilities = mockStorage.getBusinessAvailabilities();
+      const index = availabilities.findIndex((a) => a.id === where.id);
+      if (index === -1) throw new Error("BusinessAvailability not found");
+      availabilities[index] = { ...availabilities[index], ...data, updatedAt: new Date() };
+      mockStorage.setBusinessAvailabilities(availabilities);
+      return availabilities[index];
+    },
+  },
+
+  availabilityException: {
+    findUnique: ({ where }: { where: { id?: string; businessId_date?: { businessId: string; date: Date } } }) => {
+      const exceptions = mockStorage.getAvailabilityExceptions();
+      if (where.id) {
+        return exceptions.find((e) => e.id === where.id) || null;
+      }
+      if (where.businessId_date) {
+        const targetDate = new Date(where.businessId_date.date);
+        targetDate.setHours(0, 0, 0, 0);
+        return exceptions.find((e) => {
+          const exceptionDate = new Date(e.date);
+          exceptionDate.setHours(0, 0, 0, 0);
+          return e.businessId === where.businessId_date!.businessId && exceptionDate.getTime() === targetDate.getTime();
+        }) || null;
+      }
+      return null;
+    },
+
+    findMany: ({ where }: { where?: { businessId?: string } } = {}) => {
+      let exceptions = mockStorage.getAvailabilityExceptions();
+      if (where?.businessId) {
+        exceptions = exceptions.filter((e) => e.businessId === where.businessId);
+      }
+      return exceptions;
+    },
+
+    create: ({ data }: { data: Partial<MockAvailabilityException> }) => {
+      const exceptions = mockStorage.getAvailabilityExceptions();
+      const newException: MockAvailabilityException = {
+        id: mockStorage.generateId("except"),
+        businessId: data.businessId!,
+        date: data.date!,
+        isAvailable: data.isAvailable !== undefined ? data.isAvailable : false,
+        startTime: data.startTime || null,
+        endTime: data.endTime || null,
+        reason: data.reason || null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      exceptions.push(newException);
+      mockStorage.setAvailabilityExceptions(exceptions);
+      return newException;
+    },
+
+    update: ({ where, data }: { where: { id: string }; data: Partial<MockAvailabilityException> }) => {
+      const exceptions = mockStorage.getAvailabilityExceptions();
+      const index = exceptions.findIndex((e) => e.id === where.id);
+      if (index === -1) throw new Error("AvailabilityException not found");
+      exceptions[index] = { ...exceptions[index], ...data, updatedAt: new Date() };
+      mockStorage.setAvailabilityExceptions(exceptions);
+      return exceptions[index];
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const exceptions = mockStorage.getAvailabilityExceptions();
+      const filtered = exceptions.filter((e) => e.id !== where.id);
+      const deleted = exceptions.find((e) => e.id === where.id);
+      mockStorage.setAvailabilityExceptions(filtered);
+      return deleted || null;
     },
   },
 };

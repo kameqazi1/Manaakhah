@@ -42,6 +42,7 @@ export type ViewSource = "MAP" | "SEARCH" | "PROFILE" | "RECOMMENDATION" | "COMM
 export type PriceRange = "BUDGET" | "MODERATE" | "PREMIUM" | "LUXURY";
 export type ClaimStatus = "UNCLAIMED" | "CLAIMED" | "DISPUTED";
 export type VerificationStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type ServicePriceType = "fixed" | "hourly" | "starting_at" | "contact_for_price";
 
 export interface MockUser {
   id: string;
@@ -263,6 +264,47 @@ export interface MockBusinessView {
   createdAt: Date;
 }
 
+export interface MockService {
+  id: string;
+  businessId: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  priceType: ServicePriceType;
+  duration: number;
+  category?: string | null;
+  isActive: boolean;
+  isFeatured: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MockBusinessAvailability {
+  id: string;
+  businessId: string;
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  isAvailable: boolean;
+  startTime: string; // "09:00"
+  endTime: string; // "17:00"
+  slotDuration: number;
+  bufferTime: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MockAvailabilityException {
+  id: string;
+  businessId: string;
+  date: Date;
+  isAvailable: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+  reason?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface MockDatabase {
   users: MockUser[];
   businesses: MockBusiness[];
@@ -274,4 +316,7 @@ export interface MockDatabase {
   communityPosts: MockCommunityPost[];
   postComments: MockPostComment[];
   businessViews: MockBusinessView[];
+  services: MockService[];
+  businessAvailabilities: MockBusinessAvailability[];
+  availabilityExceptions: MockAvailabilityException[];
 }

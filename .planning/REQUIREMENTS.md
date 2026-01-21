@@ -7,10 +7,10 @@
 
 | ID | Requirement | Phase | Status |
 |----|-------------|-------|--------|
-| BOOK-01 | Business service catalog (define bookable services with duration, price, description) | 1 | Pending |
-| BOOK-02 | Customer-facing booking page per business (/business/[id]/book) | 1 | Pending |
-| BOOK-03 | Visual availability calendar with slot picker | 1 | Pending |
-| BOOK-04 | Booking confirmation flow with summary and payment info | 1 | Pending |
+| BOOK-01 | Business service catalog (define bookable services with duration, price, description) | 1 | Complete |
+| BOOK-02 | Customer-facing booking page per business (/business/[id]/book) | 1 | Complete |
+| BOOK-03 | Visual availability calendar with slot picker | 1 | Complete |
+| BOOK-04 | Booking confirmation flow with summary and payment info | 1 | Complete |
 | BOOK-05 | Automated email reminders (24h and 1h before appointment) | 3 | Pending |
 | BOOK-06 | Business availability management UI (set hours, exceptions) | 3 | Pending |
 | BOOK-07 | Reschedule booking flow (customer and business initiated) | 3 | Pending |
@@ -30,8 +30,8 @@
 ## Summary
 
 - **Total Requirements:** 19
-- **Pending:** 19
-- **Complete:** 0
+- **Pending:** 15
+- **Complete:** 4
 
 ---
 *Last updated: 2026-01-21*

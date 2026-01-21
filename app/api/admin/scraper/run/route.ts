@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { scrapeMuslimBusinesses } from "@/lib/scraper/scraper";
+import { checkForDuplicateInDatabase } from "@/lib/scraper/utils";
 import { ScraperConfig, DataSource, BusinessCategory, BusinessTag, VerificationLevel } from "@/lib/scraper/types";
 import { isAdmin } from "@/lib/admin-auth";
 
@@ -96,23 +97,25 @@ export async function POST(req: Request) {
     // Save scraped businesses to database
     const savedBusinesses = [];
     const saveErrors: string[] = [];
+    let duplicatesSkippedInSave = 0;
 
     for (const business of results.businesses) {
       try {
-        // Check for duplicates in database
-        const existingBusinesses = await db.scrapedBusiness.findMany({
-          where: {
-            OR: [
-              { name: business.name, address: business.address },
-              business.phone ? { phone: business.phone } : {},
-            ].filter(obj => Object.keys(obj).length > 0),
-          },
-        });
+        // Check for duplicates in BOTH ScrapedBusiness AND Business tables
+        const duplicateCheck = await checkForDuplicateInDatabase(business);
 
-        if (existingBusinesses && existingBusinesses.length > 0) {
-          saveErrors.push(`Database duplicate: ${business.name} already exists`);
+        if (duplicateCheck.isDuplicate) {
+          console.log(
+            `Skipping duplicate: ${business.name} ` +
+            `(matched ${duplicateCheck.matchType} table via ${duplicateCheck.matchField}, ` +
+            `id: ${duplicateCheck.existingId})`
+          );
+          duplicatesSkippedInSave++;
           continue;
         }
+
+        // Extract hours from business metadata if present
+        const hoursData = business.metadata?.hours || null;
 
         const saved = await db.scrapedBusiness.create({
           data: {
@@ -144,6 +147,7 @@ export async function POST(req: Request) {
               serviceList: business.services,
               cuisineTypes: business.cuisineTypes,
               priceRange: business.priceRange,
+              hours: hoursData,
             },
           },
         });
@@ -172,7 +176,8 @@ export async function POST(req: Request) {
       stats: {
         totalFound: results.stats.totalFound,
         totalSaved: savedBusinesses.length,
-        duplicatesSkipped: results.stats.duplicatesSkipped + (results.businesses.length - savedBusinesses.length),
+        duplicatesSkipped: results.stats.duplicatesSkipped + duplicatesSkippedInSave,
+        duplicatesSkippedByDatabase: duplicatesSkippedInSave,
         lowConfidenceSkipped: results.stats.lowConfidenceSkipped,
         averageConfidence: results.stats.averageConfidence,
         processingTime: results.stats.processingTime,

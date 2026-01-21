@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/admin-auth";
+import { BusinessTag } from "@prisma/client";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
@@ -63,20 +64,48 @@ export async function PUT(
       data: updateData,
     });
 
-    // If approved, create a real business listing
+    // If approved, create a real business listing with complete metadata transfer
     if (claimStatus === "APPROVED") {
-      const businesses = await db.scrapedBusiness.findMany({
+      const scraped = await db.scrapedBusiness.findUnique({
         where: { id: businessId },
       });
 
-      if (businesses && businesses.length > 0) {
-        const scraped = businesses[0];
+      if (scraped) {
+        // Parse metadata (stored as Json in ScrapedBusiness)
+        const metadata = (scraped.metadata || {}) as {
+          photos?: Array<{ url: string; caption?: string; type?: string }>;
+          tags?: string[];
+          hours?: Record<string, string>;
+          priceRange?: string;
+          serviceList?: string[];
+          confidence?: number;
+          source?: string;
+        };
 
-        // Create business from scraped data
+        // Generate unique slug
+        const baseSlug = scraped.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        const existingSlugs = await db.business.findMany({
+          where: { slug: { startsWith: baseSlug } },
+          select: { slug: true },
+        });
+        const slug =
+          existingSlugs.length === 0
+            ? baseSlug
+            : `${baseSlug}-${existingSlugs.length + 1}`;
+
+        // CRITICAL: Use sourceUrl as fallback when website is null
+        const websiteUrl = scraped.website || scraped.sourceUrl || null;
+
+        // Create business with all fields
         const newBusiness = await db.business.create({
           data: {
             name: scraped.name,
-            description: scraped.description || `${scraped.name} in ${scraped.city}`,
+            slug,
+            description:
+              scraped.description || `${scraped.name} in ${scraped.city}`,
             category: scraped.category,
             address: scraped.address,
             city: scraped.city,
@@ -85,20 +114,83 @@ export async function PUT(
             latitude: scraped.latitude || 37.5485,
             longitude: scraped.longitude || -121.9886,
             phone: scraped.phone || "",
-            email: scraped.email || null,
-            website: scraped.website || null,
-            ownerId: "system", // System-created, awaiting claim
+            email: scraped.email,
+            website: websiteUrl, // Uses sourceUrl fallback
+
+            // Transfer additional metadata
+            hours: metadata.hours || null,
+            priceRange: metadata.priceRange as
+              | "BUDGET"
+              | "MODERATE"
+              | "PREMIUM"
+              | "LUXURY"
+              | null,
+            serviceList: metadata.serviceList || [],
+
+            ownerId: "system",
             status: "PUBLISHED",
             verificationStatus: "UNVERIFIED",
             isScraped: true,
             scrapedBusinessId: scraped.id,
+            scrapedFrom: metadata.source || scraped.sourceUrl,
+            scrapedAt: scraped.scrapedAt,
+            confidenceScore: metadata.confidence || null,
           },
         });
+
+        let photosTransferred = 0;
+        let tagsTransferred = 0;
+
+        // Transfer photos if available
+        if (metadata.photos && metadata.photos.length > 0) {
+          const validPhotos = metadata.photos.filter((photo) => {
+            try {
+              new URL(photo.url);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+
+          if (validPhotos.length > 0) {
+            await db.businessPhoto.createMany({
+              data: validPhotos.map((photo, index) => ({
+                businessId: newBusiness.id,
+                url: photo.url,
+                caption: photo.caption || null,
+                type: photo.type || "general",
+                order: index,
+                isApproved: true,
+              })),
+            });
+            photosTransferred = validPhotos.length;
+          }
+        }
+
+        // Transfer tags if available
+        if (metadata.tags && metadata.tags.length > 0) {
+          const validTags = metadata.tags.filter((tag) =>
+            Object.values(BusinessTag).includes(tag as BusinessTag)
+          );
+
+          if (validTags.length > 0) {
+            await db.businessTagRelation.createMany({
+              data: validTags.map((tag) => ({
+                businessId: newBusiness.id,
+                tag: tag as BusinessTag,
+              })),
+              skipDuplicates: true,
+            });
+            tagsTransferred = validTags.length;
+          }
+        }
 
         return NextResponse.json({
           message: "Business approved and created",
           business: newBusiness,
           scrapedBusiness: updatedBusiness,
+          photosTransferred,
+          tagsTransferred,
         });
       }
     }

@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Current milestone:** v1.2 Booking, Notifications & Mobile
 **Phase:** 1 of 5 (Booking Foundation)
-**Plan:** 4 of 6 complete (01-01, 01-02, 01-03, 01-04)
+**Plan:** 5 of 6 complete (01-01, 01-02, 01-03, 01-04, 01-05)
 **Status:** In progress
-**Last activity:** 2026-01-21 - Completed 01-04-PLAN.md (Service Management UI)
+**Last activity:** 2026-01-21 - Completed 01-05-PLAN.md (Booking UI & Customer Flow)
 
-Progress: [====------] 67% (4/6 plans in Phase 1)
+Progress: [=====-----] 83% (5/6 plans in Phase 1)
 
 ## Decisions Made
 
@@ -25,6 +25,7 @@ Progress: [====------] 67% (4/6 plans in Phase 1)
 | optional serviceId | 01-01 schema | Made Booking.serviceId optional to support existing bookings that only have serviceType String |
 | service-crud-in-business-scope | 01-03 APIs | Service CRUD endpoints nested under /api/businesses/[id]/services for proper ownership context |
 | derived-categories | 01-04 UI | Categories derived from service.category field instead of separate category management |
+| mock-headers-in-component | 01-05 UI | Build mock headers within component using useMemo; pattern from existing components |
 
 ## Shipped Milestones
 
@@ -51,13 +52,14 @@ Full details: `.planning/milestones/`
 | 2026-01-21 | 01-01 documented | Service Model Schema summary created |
 | 2026-01-21 | 01-03 complete | Booking Flow APIs (Service CRUD, Availability) |
 | 2026-01-21 | 01-04 complete | Service Management UI (localStorage to API migration) |
+| 2026-01-21 | 01-05 complete | Booking UI & Customer Flow (3-step wizard at /business/[id]/book) |
 
 ## Session Continuity
 
 **Last session:** 2026-01-21
-**Stopped at:** Completed 01-04-PLAN.md execution
-**Next action:** Execute 01-05-PLAN.md (Booking Management Dashboard)
+**Stopped at:** Completed 01-05-PLAN.md execution
+**Next action:** Execute 01-06-PLAN.md (Booking Management Dashboard)
 **Resume file:** None
 
 ---
-*State updated: 2026-01-21 after 01-04 plan completion*
+*State updated: 2026-01-21 after 01-05 plan completion*

@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Current milestone:** v1.2 Booking, Notifications & Mobile
 **Phase:** 1.1 of 5 (Web Scraping Revamp - URGENT)
-**Plan:** 1 of 3 complete
-**Status:** Plan 01 complete, continuing to Plan 02
-**Last activity:** 2026-01-21 - Completed 01.1-01-PLAN.md (Validation & Approval Transfer)
+**Plan:** 2 of 3 complete
+**Status:** Plan 02 complete, continuing to Plan 03
+**Last activity:** 2026-01-21 - Completed 01.1-02-PLAN.md (Cross-table Dedup & Hours)
 
-Progress: [##--------] 20% (Phase 1 + 1.1 Plan 1/3)
+Progress: [##--------] 22% (Phase 1 + 1.1 Plan 2/3)
 
 ## Decisions Made
 
@@ -30,6 +30,8 @@ Progress: [##--------] 20% (Phase 1 + 1.1 Plan 1/3)
 | critical-name-penalty | 01.1-01 validation | Empty/malformed name gets -50 points (critical flag, effectively fails validation) |
 | sourceUrl-fallback | 01.1-01 approval | When website is null, use sourceUrl for Business.website field |
 | slug-collision | 01.1-01 approval | Append incremental suffix (-2, -3) on slug collision |
+| hours-in-metadata | 01.1-02 scraper | Store scraped hours in metadata Json field since Google format doesn't match BusinessHours type |
+| cross-table-dedup | 01.1-02 scraper | Check both ScrapedBusiness AND Business tables before saving to prevent duplicates of existing businesses |
 
 ## Shipped Milestones
 
@@ -54,12 +56,13 @@ Full details: `.planning/milestones/`
 | 2026-01-21 | v1.2 roadmap | 5 phases, 19 requirements mapped |
 | 2026-01-21 | Phase 1 complete | Booking Foundation - 6 plans, 7/7 must-haves verified |
 | 2026-01-21 | 01.1-01 complete | Validation module + approval transfer with photos/tags/hours |
+| 2026-01-21 | 01.1-02 complete | Cross-table deduplication + Google Places hours extraction |
 
 ## Session Continuity
 
 **Last session:** 2026-01-21
-**Stopped at:** Completed 01.1-01-PLAN.md (Validation & Approval Transfer)
-**Next action:** Run /gsd:execute-phase on 01.1-02-PLAN.md (Cross-table Dedup)
+**Stopped at:** Completed 01.1-02-PLAN.md (Cross-table Dedup & Hours)
+**Next action:** Run /gsd:execute-phase on 01.1-03-PLAN.md (Admin Review UI)
 **Resume file:** None
 
 ## Roadmap Evolution
@@ -67,4 +70,4 @@ Full details: `.planning/milestones/`
 - Phase 1.1 inserted after Phase 1: Web Scraping Revamp (URGENT) - scraped businesses need validation and complete data
 
 ---
-*State updated: 2026-01-21 after 01.1-01-PLAN.md completion*
+*State updated: 2026-01-21 after 01.1-02-PLAN.md completion*

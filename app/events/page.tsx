@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { Calendar, Building2 } from "lucide-react";
 import { EVENT_TYPES } from "@/lib/constants";
 
 interface Event {
@@ -28,95 +29,6 @@ interface Event {
   attendeeCount: number;
 }
 
-const MOCK_EVENTS: Event[] = [
-  {
-    id: "1",
-    businessId: "b1",
-    businessName: "Fremont Islamic Center",
-    title: "Community Iftar Gathering",
-    description: "Join us for a community iftar during the blessed month of Ramadan. Food provided for all attendees.",
-    eventType: "RELIGIOUS",
-    startDate: "2026-03-15",
-    endDate: "2026-03-15",
-    startTime: "18:30",
-    endTime: "21:00",
-    location: "Fremont Islamic Center, 42000 Blacow Rd, Fremont, CA",
-    isVirtual: false,
-    isFree: true,
-    maxAttendees: 200,
-    attendeeCount: 145,
-  },
-  {
-    id: "2",
-    businessId: "b2",
-    businessName: "Bay Area Muslim Business Network",
-    title: "Halal Business Workshop",
-    description: "Learn how to start and grow your halal-certified business. Topics include certification, marketing, and community engagement.",
-    eventType: "WORKSHOP",
-    startDate: "2026-01-25",
-    endDate: "2026-01-25",
-    startTime: "10:00",
-    endTime: "14:00",
-    location: "Marriott Fremont, Silicon Valley",
-    isVirtual: false,
-    isFree: false,
-    price: 25,
-    maxAttendees: 50,
-    attendeeCount: 32,
-  },
-  {
-    id: "3",
-    businessId: "b3",
-    businessName: "Saffron Kitchen",
-    title: "Grand Opening Celebration",
-    description: "Join us for our grand opening! Free samples, live music, and special discounts all day.",
-    eventType: "PROMOTION",
-    startDate: "2026-02-01",
-    endDate: "2026-02-01",
-    startTime: "11:00",
-    endTime: "20:00",
-    location: "39170 Fremont Hub, Fremont, CA",
-    isVirtual: false,
-    isFree: true,
-    attendeeCount: 89,
-  },
-  {
-    id: "4",
-    businessId: "b4",
-    businessName: "Muslim Youth Alliance",
-    title: "Youth Leadership Conference",
-    description: "Annual conference for Muslim youth featuring speakers, workshops, and networking opportunities.",
-    eventType: "COMMUNITY",
-    startDate: "2026-02-15",
-    endDate: "2026-02-16",
-    startTime: "09:00",
-    endTime: "17:00",
-    location: "Virtual Event",
-    isVirtual: true,
-    virtualLink: "https://zoom.us/meeting",
-    isFree: false,
-    price: 15,
-    maxAttendees: 500,
-    attendeeCount: 287,
-  },
-  {
-    id: "5",
-    businessId: "b5",
-    businessName: "Helping Hands Foundation",
-    title: "Community Food Drive",
-    description: "Help us collect non-perishable food items for families in need. Drop-off locations available.",
-    eventType: "CHARITY",
-    startDate: "2026-01-20",
-    endDate: "2026-01-27",
-    startTime: "08:00",
-    endTime: "18:00",
-    location: "Multiple locations in Fremont",
-    isVirtual: false,
-    isFree: true,
-    attendeeCount: 156,
-  },
-];
-
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,18 +41,16 @@ export default function EventsPage() {
   }, []);
 
   const loadEvents = () => {
-    // Load from localStorage or use mock data
+    // Load from localStorage (user-generated events only)
     const savedEvents = localStorage.getItem("communityEvents");
     if (savedEvents) {
       try {
         setEvents(JSON.parse(savedEvents));
       } catch {
-        setEvents(MOCK_EVENTS);
-        localStorage.setItem("communityEvents", JSON.stringify(MOCK_EVENTS));
+        setEvents([]);
       }
     } else {
-      setEvents(MOCK_EVENTS);
-      localStorage.setItem("communityEvents", JSON.stringify(MOCK_EVENTS));
+      setEvents([]);
     }
     setLoading(false);
   };
@@ -210,7 +120,6 @@ export default function EventsPage() {
   };
 
   const handleRegister = (eventId: string) => {
-    // In production, this would call an API
     const updatedEvents = events.map((e) =>
       e.id === eventId ? { ...e, attendeeCount: e.attendeeCount + 1 } : e
     );
@@ -274,7 +183,34 @@ export default function EventsPage() {
           ))}
         </div>
 
-        {viewMode === "list" ? (
+        {events.length === 0 ? (
+          /* Empty State */
+          <Card className="text-center p-12 bg-gradient-to-br from-green-50 to-emerald-50 border-dashed border-2 border-green-200">
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Calendar className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">No Events Yet</h3>
+              <p className="text-gray-600 mb-6">
+                Community events will appear here as businesses and organizations create them.
+                Check back soon for upcoming gatherings, workshops, and celebrations.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link href="/register">
+                  <Button size="lg">
+                    <Building2 className="w-4 h-4 mr-2" />
+                    List Your Business
+                  </Button>
+                </Link>
+                <Link href="/search">
+                  <Button size="lg" variant="outline">
+                    Find Businesses
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
+        ) : viewMode === "list" ? (
           <div className="space-y-8">
             {/* Upcoming Events */}
             <div>

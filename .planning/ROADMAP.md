@@ -50,10 +50,12 @@ Plans:
 
 **Depends on:** Phase 1
 
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 1.1 to break down)
+- [ ] 01.1-01-PLAN.md — Business validation module and approval transfer fix
+- [ ] 01.1-02-PLAN.md — Cross-table deduplication and hours extraction
+- [ ] 01.1-03-PLAN.md — Validation UI and end-to-end verification
 
 **Must-Haves:**
 1. Validate scraped data is actually a business (not spam, residential, etc.)
@@ -140,8 +142,8 @@ Plans:
 
 | Phase | Status | Plans | Completed |
 |-------|--------|-------|-----------|
-| 1 | ✓ Complete | 6 | 6 |
-| 1.1 | Not Started | 0 | 0 |
+| 1 | Complete | 6 | 6 |
+| 1.1 | Planned | 3 | 0 |
 | 2 | Not Started | 0 | 0 |
 | 3 | Not Started | 0 | 0 |
 | 4 | Not Started | 0 | 0 |

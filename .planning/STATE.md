@@ -53,9 +53,13 @@ Full details: `.planning/milestones/`
 ## Session Continuity
 
 **Last session:** 2026-01-21
-**Stopped at:** Completed Phase 1: Booking Foundation
-**Next action:** Run /gsd:plan-phase 2 to plan Notifications Core
+**Stopped at:** Inserted Phase 1.1 for urgent web scraping work
+**Next action:** Run /gsd:plan-phase 1.1 to plan Web Scraping Revamp
 **Resume file:** None
+
+## Roadmap Evolution
+
+- Phase 1.1 inserted after Phase 1: Web Scraping Revamp (URGENT) - scraped businesses need validation and complete data
 
 ---
 *State updated: 2026-01-21 after Phase 1 completion*

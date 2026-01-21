@@ -9,6 +9,7 @@
 | Phase | Name | Goal | Requirements |
 |-------|------|------|--------------|
 | 1 | Booking Foundation | Users can book appointments through a visual calendar interface | BOOK-01, BOOK-02, BOOK-03, BOOK-04 |
+| 1.1 | Web Scraping Revamp | Scraped businesses are accurate and properly load into the directory | SCRAPE-01 |
 | 2 | Notifications Core | All notifications are real, clickable, and navigate correctly | NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04, NOTIF-05, NOTIF-08 |
 | 3 | Business Booking Tools | Business owners can manage availability and bookings efficiently | BOOK-05, BOOK-06, BOOK-07, MOB-05 |
 | 4 | Notification Delivery | Users receive email notifications for important events | NOTIF-06, NOTIF-07 |
@@ -40,6 +41,30 @@ Plans:
 7. New booking creates database record with PENDING status
 
 **Builds on:** Existing Booking, BusinessAvailability Prisma models
+
+---
+
+## Phase 1.1: Web Scraping Revamp (INSERTED)
+
+**Goal:** Scraped businesses are accurate, verified as real businesses, and properly load into the directory with complete information
+
+**Depends on:** Phase 1
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 1.1 to break down)
+
+**Must-Haves:**
+1. Validate scraped data is actually a business (not spam, residential, etc.)
+2. Scraped businesses load and display on /businesses page
+3. Business name extracted correctly from source
+4. Business images scraped when available
+5. Business page/website URL captured
+6. Address, phone, hours populated where available
+7. Deduplication to avoid duplicate business entries
+
+**Builds on:** Existing web scraping system in /admin/scraper
 
 ---
 
@@ -116,6 +141,7 @@ Plans:
 | Phase | Status | Plans | Completed |
 |-------|--------|-------|-----------|
 | 1 | ✓ Complete | 6 | 6 |
+| 1.1 | Not Started | 0 | 0 |
 | 2 | Not Started | 0 | 0 |
 | 3 | Not Started | 0 | 0 |
 | 4 | Not Started | 0 | 0 |

@@ -11,6 +11,7 @@
 | BOOK-02 | Customer-facing booking page per business (/business/[id]/book) | 1 | Complete |
 | BOOK-03 | Visual availability calendar with slot picker | 1 | Complete |
 | BOOK-04 | Booking confirmation flow with summary and payment info | 1 | Complete |
+| SCRAPE-01 | Web scraping produces accurate, verified businesses with complete data | 1.1 | Pending |
 | BOOK-05 | Automated email reminders (24h and 1h before appointment) | 3 | Pending |
 | BOOK-06 | Business availability management UI (set hours, exceptions) | 3 | Pending |
 | BOOK-07 | Reschedule booking flow (customer and business initiated) | 3 | Pending |
@@ -29,8 +30,8 @@
 
 ## Summary
 
-- **Total Requirements:** 19
-- **Pending:** 15
+- **Total Requirements:** 20
+- **Pending:** 16
 - **Complete:** 4
 
 ---

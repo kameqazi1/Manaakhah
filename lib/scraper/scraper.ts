@@ -379,6 +379,48 @@ async function transformGooglePlace(
   const { category, alternatives } = categorizeBusiness(combinedText, place.name);
   const { detected, suggested } = detectTags(combinedText, place.name, signals);
 
+  // Extract hours from opening_hours
+  // Store as metadata since Google provides string format like "9:00 AM - 9:00 PM"
+  let hoursMetadata: Record<string, string> | undefined;
+  if (place.opening_hours?.weekday_text) {
+    hoursMetadata = {};
+    const dayMap: Record<string, string> = {
+      Monday: "monday",
+      Tuesday: "tuesday",
+      Wednesday: "wednesday",
+      Thursday: "thursday",
+      Friday: "friday",
+      Saturday: "saturday",
+      Sunday: "sunday",
+    };
+
+    for (const dayText of place.opening_hours.weekday_text) {
+      // Format: "Monday: 9:00 AM – 9:00 PM" or "Monday: Closed"
+      const colonIndex = dayText.indexOf(":");
+      if (colonIndex > 0) {
+        const day = dayText.substring(0, colonIndex).trim();
+        const time = dayText.substring(colonIndex + 1).trim();
+        const dayKey = dayMap[day];
+        if (dayKey) {
+          hoursMetadata[dayKey] = time;
+        }
+      }
+    }
+  }
+
+  // Extract price level (0-4 scale from Google)
+  let priceRange: "BUDGET" | "MODERATE" | "PREMIUM" | "LUXURY" | undefined;
+  if (place.price_level !== undefined) {
+    const priceMap: Record<number, "BUDGET" | "MODERATE" | "PREMIUM" | "LUXURY"> = {
+      0: "BUDGET",
+      1: "BUDGET",
+      2: "MODERATE",
+      3: "PREMIUM",
+      4: "LUXURY",
+    };
+    priceRange = priceMap[place.price_level];
+  }
+
   return {
     name: place.name,
     description: place.editorial_summary?.overview,
@@ -394,6 +436,7 @@ async function transformGooglePlace(
     longitude: place.geometry?.location?.lng,
     phone: place.formatted_phone_number,
     website: place.website,
+    priceRange,
     averageRating: place.rating,
     totalReviews: place.user_ratings_total,
     confidence: score,
@@ -407,6 +450,7 @@ async function transformGooglePlace(
       source: "google",
     })),
     scrapedAt: new Date(),
+    metadata: hoursMetadata ? { hours: hoursMetadata } : undefined,
   };
 }
 
@@ -970,6 +1014,19 @@ function generateMockBusinesses(
     const baseLat = config.latitude || 37.5485;
     const baseLng = config.longitude || -121.9886;
 
+    // Generate sample hours metadata
+    const mockHoursMetadata = {
+      hours: {
+        monday: "9:00 AM - 9:00 PM",
+        tuesday: "9:00 AM - 9:00 PM",
+        wednesday: "9:00 AM - 9:00 PM",
+        thursday: "9:00 AM - 9:00 PM",
+        friday: "9:00 AM - 10:00 PM",
+        saturday: "10:00 AM - 10:00 PM",
+        sunday: "10:00 AM - 8:00 PM",
+      },
+    };
+
     businesses.push({
       name,
       description,
@@ -998,6 +1055,7 @@ function generateMockBusinesses(
       sourceUrl: `https://www.${source.replace("_", "")}.com/search/${encodeURIComponent(name)}`,
       sourceId: `${source}_${Date.now()}_${i}`,
       scrapedAt: new Date(),
+      metadata: mockHoursMetadata,
     });
   }
 

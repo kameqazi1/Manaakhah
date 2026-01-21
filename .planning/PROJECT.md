@@ -10,6 +10,7 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 
 ## Current State
 
+**Active:** v1.2 Booking, Notifications & Mobile
 **Shipped:** v1.1 Map Overhaul (2026-01-19)
 **Codebase:** ~44,000 lines of TypeScript across ~90 routes
 **Tech stack:** Next.js 16, NextAuth v5, Prisma, Resend, PostgreSQL, MapLibre GL JS
@@ -50,7 +51,13 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 
 <!-- Current scope. Building toward these. -->
 
-(None currently — milestone complete, next milestone to be defined)
+- Customer-facing booking page with visual calendar — v1.2
+- Business service catalog (bookable services with duration/price) — v1.2
+- Real notifications on booking/review events — v1.2
+- Clickable notifications with proper navigation — v1.2
+- Mobile bottom navigation bar — v1.2
+- Touch-friendly tap targets (44px minimum) — v1.2
+- Map touch gestures (pinch-zoom, two-finger pan) — v1.2
 
 ### Out of Scope
 
@@ -62,9 +69,11 @@ Users can find and connect with verified Muslim-owned businesses in their area.
 - Payment processing — Not needed for directory functionality
 - SMS 2FA — Removed in v1, adds cost/complexity without being in UI
 - 2FA login challenge UI — Backend ready, frontend needed (v2 candidate)
-- Mobile map gestures — Deferred from v1.1 to v1.2 (pinch-zoom, touch targets)
-- Leaflet package removal — Deferred from v1.1 to v1.2 (cleanup after migration tested)
-- Dedicated /map page — Deferred from v1.1 to v1.2
+- Dedicated /map page — Deferred from v1.1 (low priority)
+- Payment processing (Stripe/Square) — v1.3 candidate
+- SMS notifications — Cost/complexity, email sufficient
+- Real-time push notifications — Web push API complexity
+- Video consultations — Not core to directory
 
 ## Context
 
@@ -77,8 +86,9 @@ v1 shipped complete authentication with both modes working. Environment validati
 **Known limitations:**
 - 2FA login challenge flow incomplete (backend throws error, no UI to catch it)
 - Production login page uses API route instead of NextAuth signIn directly
-- Leaflet packages still in bundle (deferred cleanup to v1.2)
-- Hover state on map markers needs Layer-based approach (deferred to v1.2)
+- Leaflet packages still in bundle (cleanup deferred)
+- Hover state on map markers needs Layer-based approach (low priority)
+- Notification system returns mock data (fixing in v1.2)
 
 ## Constraints
 
@@ -109,4 +119,4 @@ v1 shipped complete authentication with both modes working. Environment validati
 | URL as source of truth | Shareable links, React Query auto-refetch | Good |
 
 ---
-*Last updated: 2026-01-19 after v1.1 milestone completion*
+*Last updated: 2026-01-21 after v1.2 milestone creation*

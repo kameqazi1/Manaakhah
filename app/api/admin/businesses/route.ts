@@ -87,8 +87,13 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error("Error fetching businesses:", error);
+    // Return more detailed error info for debugging
     return NextResponse.json(
-      { error: "Failed to fetch businesses" },
+      {
+        error: "Failed to fetch businesses",
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }

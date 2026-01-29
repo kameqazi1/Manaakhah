@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { scrapeMuslimBusinesses } from "@/lib/scraper/scraper";
-import { checkForDuplicateInDatabase } from "@/lib/scraper/utils";
-import { ScraperConfig, DataSource, BusinessCategory, BusinessTag, VerificationLevel } from "@/lib/scraper/types";
+import { runScraper, getImplementedSources } from "@/lib/scraper/scraper";
+import type { ScraperConfig, DataSource } from "@/lib/scraper/types";
 import { isAdmin } from "@/lib/admin-auth";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
 
-// POST /api/admin/scraper/run - Run web scraper with enhanced configuration
+/**
+ * POST /api/admin/scraper/run - Run web scraper
+ *
+ * Runs the specified scrapers and saves results to ScrapedBusiness table
+ * for admin review.
+ */
 export async function POST(req: Request) {
   try {
     if (!(await isAdmin(req))) {
@@ -19,190 +22,135 @@ export async function POST(req: Request) {
 
     // Extract configuration from request body
     const {
-      searchQuery,
-      keywords,
-      excludeKeywords,
-      city,
-      state,
-      zipCode,
-      radius,
-      categories,
-      tags,
       sources,
+      state,
+      region,
+      maxResults,
       minConfidence,
-      maxResultsPerSource,
-      verificationLevel,
-      onlyWithPhotos,
-      onlyWithReviews,
-      onlyWithWebsite,
-      onlyWithPhone,
-      deduplicateByName,
-      deduplicateByAddress,
-      deduplicateByPhone,
-      similarityThreshold,
-      // Legacy fields for backwards compatibility
-      category,
-      source,
+      skipGeocoding,
+      skipDuplicateCheck,
+      verbose,
     } = body;
 
-    if (!searchQuery) {
+    // Validate sources
+    const implementedSources = getImplementedSources();
+    const requestedSources: DataSource[] = sources || implementedSources;
+
+    // Filter to only implemented sources
+    const validSources = requestedSources.filter((s: DataSource) =>
+      implementedSources.includes(s)
+    );
+
+    if (validSources.length === 0) {
       return NextResponse.json(
-        { error: "Search query is required" },
+        {
+          error: "No valid sources specified",
+          implementedSources,
+        },
         { status: 400 }
       );
     }
 
     // Build scraper configuration
     const config: ScraperConfig = {
-      searchQuery,
-      keywords: keywords || [],
-      excludeKeywords: excludeKeywords || [],
-      city: city || "Fremont",
-      state: state || "CA",
-      zipCode: zipCode || "94536",
-      radius: radius || 10,
-
-      // Handle legacy 'source' field or new 'sources' array
-      sources: sources || (source ? [mapLegacySource(source)] : ["google_places"]),
-
-      // Handle legacy 'category' field or new 'categories' array
-      categories: categories || (category ? [category as BusinessCategory] : undefined),
-
-      tags: tags as BusinessTag[] | undefined,
-      minConfidence: minConfidence || 0,
-      maxResultsPerSource: maxResultsPerSource || 20,
-      verificationLevel: verificationLevel as VerificationLevel[] | undefined,
-
-      // Quality filters
-      onlyWithPhotos: onlyWithPhotos || false,
-      onlyWithReviews: onlyWithReviews || false,
-      onlyWithWebsite: onlyWithWebsite || false,
-      onlyWithPhone: onlyWithPhone || false,
-
-      // Deduplication
-      deduplicateByName: deduplicateByName !== false,
-      deduplicateByAddress: deduplicateByAddress !== false,
-      deduplicateByPhone: deduplicateByPhone !== false,
-      similarityThreshold: similarityThreshold || 0.85,
-
-      // Rate limiting
-      rateLimit: 500, // 500ms between sources
-      maxRetries: 2,
-      timeout: 30000,
+      sources: validSources,
+      state: state?.toUpperCase(),
+      region,
+      maxResults,
+      minConfidence,
+      skipGeocoding: skipGeocoding ?? false,
+      skipDuplicateCheck: skipDuplicateCheck ?? false,
+      verbose: verbose ?? false,
+      rateLimit: 2000, // 2 seconds between sources
     };
 
     // Run scraper
-    const results = await scrapeMuslimBusinesses(config);
+    const results = await runScraper(config);
 
-    // Save scraped businesses to database
-    const savedBusinesses = [];
-    const saveErrors: string[] = [];
-    let duplicatesSkippedInSave = 0;
+    // Aggregate stats across all sources
+    let totalFound = 0;
+    let totalImported = 0;
+    let totalSkipped = 0;
+    let totalErrors = 0;
+    let totalGeocoded = 0;
+    const bySource: Record<string, { found: number; imported: number; errors: number }> = {};
+    const allErrors: Array<{ source: string; message: string }> = [];
 
-    for (const business of results.businesses) {
-      try {
-        // Check for duplicates in BOTH ScrapedBusiness AND Business tables
-        const duplicateCheck = await checkForDuplicateInDatabase(business);
+    for (const result of results) {
+      totalFound += result.stats.found;
+      totalImported += result.stats.imported;
+      totalSkipped += result.stats.skipped;
+      totalErrors += result.stats.errors;
+      totalGeocoded += result.stats.geocoded;
 
-        if (duplicateCheck.isDuplicate) {
-          console.log(
-            `Skipping duplicate: ${business.name} ` +
-            `(matched ${duplicateCheck.matchType} table via ${duplicateCheck.matchField}, ` +
-            `id: ${duplicateCheck.existingId})`
-          );
-          duplicatesSkippedInSave++;
-          continue;
-        }
+      bySource[result.source] = {
+        found: result.stats.found,
+        imported: result.stats.imported,
+        errors: result.stats.errors,
+      };
 
-        // Extract hours from business metadata if present
-        const hoursData = business.metadata?.hours || null;
-
-        const saved = await db.scrapedBusiness.create({
-          data: {
-            name: business.name,
-            category: business.category,
-            address: business.address,
-            city: business.city,
-            state: business.state,
-            zipCode: business.zipCode,
-            latitude: business.latitude || null,
-            longitude: business.longitude || null,
-            phone: business.phone || null,
-            email: business.email || null,
-            website: business.website || null,
-            description: business.description || null,
-            sourceUrl: business.sourceUrl,
-            scrapedAt: new Date(),
-            claimStatus: "PENDING_REVIEW",
-            metadata: {
-              source: business.source,
-              sourceId: business.sourceId,
-              confidence: business.confidence,
-              signals: business.signals,
-              tags: business.tags,
-              suggestedTags: business.suggestedTags,
-              verificationLevel: business.verificationLevel,
-              averageRating: business.averageRating,
-              totalReviews: business.totalReviews,
-              serviceList: business.services,
-              cuisineTypes: business.cuisineTypes,
-              priceRange: business.priceRange,
-              hours: hoursData,
-            },
-          },
-        });
-
-        savedBusinesses.push({
-          ...saved,
-          confidence: business.confidence,
-          tags: business.tags,
-          source: business.source,
-        });
-      } catch (error) {
-        saveErrors.push(`Failed to save ${business.name}: ${error}`);
+      for (const err of result.errors) {
+        allErrors.push({ source: err.source, message: err.message });
       }
     }
 
-    // Combine scraper errors with save errors
-    const allErrors = [
-      ...results.errors.map(e => ({ source: e.source, message: e.message })),
-      ...saveErrors.map(e => ({ source: "database", message: e })),
-    ];
+    const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
 
     return NextResponse.json({
-      success: results.success,
-      businesses: savedBusinesses,
-      errors: allErrors,
+      success: results.some((r) => r.success),
       stats: {
-        totalFound: results.stats.totalFound,
-        totalSaved: savedBusinesses.length,
-        duplicatesSkipped: results.stats.duplicatesSkipped + duplicatesSkippedInSave,
-        duplicatesSkippedByDatabase: duplicatesSkippedInSave,
-        lowConfidenceSkipped: results.stats.lowConfidenceSkipped,
-        averageConfidence: results.stats.averageConfidence,
-        processingTime: results.stats.processingTime,
-        bySource: results.stats.bySource,
-        byCategory: results.stats.byCategory,
+        totalFound,
+        totalImported,
+        totalSkipped,
+        totalErrors,
+        totalGeocoded,
+        duration: totalDuration,
+        bySource,
       },
+      errors: allErrors,
+      message:
+        totalImported > 0
+          ? `Imported ${totalImported} establishments. Review in admin panel.`
+          : "No new establishments found.",
     });
   } catch (error) {
     console.error("Error running scraper:", error);
     return NextResponse.json(
-      { error: "Failed to run scraper" },
+      {
+        error: "Failed to run scraper",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
 }
 
 /**
- * Map legacy source names to new DataSource type
+ * GET /api/admin/scraper/run - Get scraper status
+ *
+ * Returns information about implemented sources and pending review count.
  */
-function mapLegacySource(source: string): DataSource {
-  const mapping: Record<string, DataSource> = {
-    google: "google_places",
-    yelp: "yelp",
-    zabihah: "zabihah",
-    manual: "manual",
-  };
-  return mapping[source] || "google_places";
+export async function GET(req: Request) {
+  try {
+    if (!(await isAdmin(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const { getScraperStatus } = await import("@/lib/scraper/scraper");
+    const status = await getScraperStatus();
+
+    return NextResponse.json({
+      implementedSources: status.implementedSources,
+      pendingReview: status.pendingReview,
+      approved: status.approved,
+      rejected: status.rejected,
+      lastScrapeAt: status.lastScrapeAt,
+    });
+  } catch (error) {
+    console.error("Error getting scraper status:", error);
+    return NextResponse.json(
+      { error: "Failed to get scraper status" },
+      { status: 500 }
+    );
+  }
 }

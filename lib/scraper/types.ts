@@ -1,353 +1,383 @@
 /**
- * Enhanced Scraper Types
- * Comprehensive type definitions for multi-source business scraping
+ * Scraper Types
+ *
+ * Simplified type definitions for multi-source halal business scraping.
+ * Focused on the core workflow: Scrape → ScrapedBusiness → Admin Review → Business
  */
 
-// Data source types
+import { BusinessCategory as PrismaBusinessCategory } from "@prisma/client";
+
+// =============================================================================
+// DATA SOURCES
+// =============================================================================
+
+/**
+ * Supported data sources for scraping
+ */
 export type DataSource =
-  | "google_places"
-  | "yelp"
-  | "zabihah"
-  | "halaltrip"
-  | "salaamgateway"
-  | "muslimpro"
-  | "craigslist"
-  | "facebook"
-  | "instagram"
-  | "yellowpages"
-  | "bbb"
-  | "chamberofcommerce"
-  | "csv_import"
-  | "json_import"
-  | "manual"
-  // Halal certification directories
-  | "hfsaa"   // Halal Food Standards Alliance of America
-  | "hms"     // Halal Monitoring Services
-  | "isna"    // ISNA Halal Certification
-  | "ifanca"; // IFANCA Certification
+  | "hfsaa" // Halal Food Standards Alliance of America
+  | "hms" // Halal Monitoring Services
+  | "isna" // ISNA Halal Certification
+  | "ifanca" // IFANCA Certification
+  | "sanha" // SANHA (if US presence)
+  | "zabihafinder" // ZabihaFinder community directory
+  | "csv_import" // CSV file import
+  | "json_import" // JSON file import
+  | "manual"; // Manual entry
 
-// Business categories (expanded)
-export type BusinessCategory =
-  | "HALAL_FOOD"
-  | "RESTAURANT"
-  | "GROCERY"
-  | "MASJID"
-  | "AUTO_REPAIR"
-  | "PLUMBING"
-  | "ELECTRICAL"
-  | "HANDYMAN"
-  | "TUTORING"
-  | "LEGAL_SERVICES"
-  | "ACCOUNTING"
-  | "HEALTH_WELLNESS"
-  | "BARBER_SALON"
-  | "CHILDCARE"
-  | "COMMUNITY_AID"
-  | "REAL_ESTATE"
-  | "INSURANCE"
-  | "IT_SERVICES"
-  | "CLOTHING"
-  | "JEWELRY"
-  | "TRAVEL"
-  | "CATERING"
-  | "FOOD_TRUCK"
-  | "BAKERY"
-  | "BUTCHER"
-  | "PHARMACY"
-  | "DENTAL"
-  | "OPTOMETRY"
-  | "MENTAL_HEALTH"
-  | "FITNESS"
-  | "MARTIAL_ARTS"
-  | "PHOTOGRAPHY"
-  | "EVENT_PLANNING"
-  | "WEDDING_SERVICES"
-  | "FUNERAL_SERVICES"
-  | "FINANCIAL_SERVICES"
-  | "MORTGAGE"
-  | "CLEANING"
-  | "LANDSCAPING"
-  | "MOVING"
-  | "PRINTING"
-  | "OTHER";
+// Re-export BusinessCategory from Prisma for consistency
+export type BusinessCategory = PrismaBusinessCategory;
 
-// Business tags
-export type BusinessTag =
-  | "MUSLIM_OWNED"
-  | "HALAL_VERIFIED"
-  | "ZABIHA_CERTIFIED"
-  | "SISTERS_FRIENDLY"
-  | "BROTHERS_ONLY"
-  | "KID_FRIENDLY"
-  | "WHEELCHAIR_ACCESSIBLE"
-  | "PRAYER_SPACE"
-  | "WUDU_FACILITIES"
-  | "FAMILY_OWNED"
-  | "VETERAN_OWNED"
-  | "WOMEN_OWNED"
-  | "ACCEPTS_ZAKAT"
-  | "SADAQAH_RECIPIENT"
-  | "INTEREST_FREE"
-  | "SHARIA_COMPLIANT"
-  | "ORGANIC"
-  | "VEGAN_OPTIONS"
-  | "GLUTEN_FREE"
-  | "DELIVERY"
-  | "CURBSIDE"
-  | "APPOINTMENT_ONLY"
-  | "WALK_INS_WELCOME"
-  | "24_HOURS"
-  | "RAMADAN_HOURS";
+// =============================================================================
+// SCRAPER CONFIGURATION
+// =============================================================================
 
-// Verification status
-export type VerificationLevel =
-  | "UNVERIFIED"
-  | "SELF_REPORTED"
-  | "COMMUNITY_VERIFIED"
-  | "OFFICIALLY_CERTIFIED"
-  | "ADMIN_VERIFIED";
-
-// Scraper configuration
+/**
+ * Configuration for running scrapers
+ */
 export interface ScraperConfig {
-  // Search parameters
-  searchQuery: string;
-  keywords?: string[];
-  excludeKeywords?: string[];
-
-  // Location
-  city: string;
-  state: string;
-  zipCode?: string;
-  radius?: number; // miles
-  latitude?: number;
-  longitude?: number;
-
-  // Filtering
-  categories?: BusinessCategory[];
-  tags?: BusinessTag[];
-  minConfidence?: number; // 0-100
-  verificationLevel?: VerificationLevel[];
-
-  // Source configuration
+  /** Data sources to scrape */
   sources: DataSource[];
-  maxResultsPerSource?: number;
 
-  // Rate limiting
-  rateLimit?: number; // ms between requests
-  maxRetries?: number;
-  timeout?: number;
+  /** Filter by geographic region (e.g., 'Bay Area', 'Chicago') */
+  region?: string;
 
-  // Options
-  includeUnverified?: boolean;
-  includeClosed?: boolean;
-  onlyWithPhotos?: boolean;
-  onlyWithReviews?: boolean;
-  onlyWithWebsite?: boolean;
-  onlyWithPhone?: boolean;
+  /** Filter by state (e.g., 'CA', 'IL') */
+  state?: string;
 
-  // Deduplication
-  deduplicateByName?: boolean;
-  deduplicateByAddress?: boolean;
-  deduplicateByPhone?: boolean;
-  similarityThreshold?: number; // 0-1
+  /** Rate limit between requests in ms (default: 1000) */
+  rateLimit?: number;
+
+  /** Maximum results per source */
+  maxResults?: number;
+
+  /** Minimum confidence score to import (0-100) */
+  minConfidence?: number;
+
+  /** Skip geocoding step */
+  skipGeocoding?: boolean;
+
+  /** Skip duplicate checking */
+  skipDuplicateCheck?: boolean;
+
+  /** Dry run mode - don't save to database */
+  dryRun?: boolean;
+
+  /** Enable verbose logging */
+  verbose?: boolean;
 }
 
-// Scraped business data
-export interface ScrapedBusiness {
-  // Basic info
+// =============================================================================
+// SCRAPED DATA
+// =============================================================================
+
+/**
+ * Raw establishment data scraped from a source.
+ * This is the intermediate format before saving to ScrapedBusiness.
+ */
+export interface ScrapedEstablishment {
+  /** Business name */
   name: string;
-  description?: string;
-  shortDescription?: string;
 
-  // Category and tags
-  category: BusinessCategory;
-  suggestedCategories?: BusinessCategory[];
-  tags: BusinessTag[];
-  suggestedTags?: BusinessTag[];
-
-  // Location
+  /** Street address */
   address: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country?: string;
-  latitude?: number;
-  longitude?: number;
-  neighborhood?: string;
 
-  // Contact
+  /** City */
+  city: string;
+
+  /** State (2-letter abbreviation) */
+  state: string;
+
+  /** Postal/ZIP code */
+  postalCode?: string;
+
+  /** Country (default: 'USA') */
+  country?: string;
+
+  /** Phone number */
   phone?: string;
-  phoneAlternate?: string;
+
+  /** Email address */
   email?: string;
+
+  /** Website URL */
   website?: string;
 
-  // Social media
-  facebook?: string;
-  instagram?: string;
-  twitter?: string;
-  linkedin?: string;
-  youtube?: string;
-  tiktok?: string;
+  /** Business category (will be mapped to BusinessCategory enum) */
+  category: string;
 
-  // Hours
-  hours?: BusinessHours;
-  ramadanHours?: BusinessHours;
-  holidayHours?: HolidayHours[];
-  timezone?: string;
+  /** Geographic region from source */
+  region?: string;
 
-  // Services and products
-  services?: string[];
+  /** Latitude coordinate */
+  latitude?: number;
+
+  /** Longitude coordinate */
+  longitude?: number;
+
+  /** Halal certification number */
+  certificationNumber?: string;
+
+  /** Certifying body (e.g., 'HFSAA', 'HMS') */
+  certificationBody?: string;
+
+  /** Certification expiration date */
+  certificationExpiry?: string;
+
+  /** Products offered (for butchers/grocers) */
   products?: string[];
-  cuisineTypes?: string[];
-  priceRange?: "BUDGET" | "MODERATE" | "PREMIUM" | "LUXURY";
 
-  // Media
-  photos?: ScrapedPhoto[];
-  logo?: string;
-  coverImage?: string;
-  menuUrl?: string;
+  /** Description or notes */
+  description?: string;
 
-  // Reviews and ratings
-  averageRating?: number;
-  totalReviews?: number;
-  ratings?: {
-    source: string;
-    rating: number;
-    count: number;
-  }[];
-
-  // Verification and confidence
-  confidence: number; // 0-100
-  signals: MuslimSignal[];
-  verificationLevel: VerificationLevel;
-  verificationNotes?: string;
-
-  // Source tracking
-  source: DataSource;
+  /** Source URL where data was found */
   sourceUrl: string;
-  sourceId?: string;
-
-  // Metadata
-  scrapedAt: Date;
-  lastUpdated?: Date;
-  metadata?: Record<string, any>;
 }
 
-// Business hours structure
-export interface BusinessHours {
-  monday?: DayHours;
-  tuesday?: DayHours;
-  wednesday?: DayHours;
-  thursday?: DayHours;
-  friday?: DayHours;
-  saturday?: DayHours;
-  sunday?: DayHours;
-}
+// =============================================================================
+// MUSLIM SIGNAL DETECTION
+// =============================================================================
 
-export interface DayHours {
-  open: string; // "09:00"
-  close: string; // "21:00"
-  closed?: boolean;
-  breaks?: { start: string; end: string }[];
-}
-
-export interface HolidayHours {
-  date: string;
-  name: string;
-  hours?: DayHours;
-  closed?: boolean;
-}
-
-// Photo data
-export interface ScrapedPhoto {
-  url: string;
-  caption?: string;
-  source?: string;
-  isPrimary?: boolean;
-  type?: "exterior" | "interior" | "food" | "product" | "team" | "other";
-}
-
-// Muslim signal detection
+/**
+ * Muslim/Islamic signal detected in business data
+ */
 export interface MuslimSignal {
+  /** The keyword or pattern that matched */
   keyword: string;
+
+  /** Context around the match */
   context: string;
+
+  /** Weight/importance of this signal (higher = more confident) */
   weight: number;
-  category: "name" | "description" | "review" | "menu" | "website" | "social";
+
+  /** Where the signal was found */
+  category: "name" | "description" | "certification" | "address" | "website";
 }
 
-// Scraper result
-export interface ScraperResult {
-  success: boolean;
-  businesses: ScrapedBusiness[];
-  errors: ScraperError[];
-  stats: ScraperStats;
-  scrapedAt: Date;
+/**
+ * Result of Muslim signal analysis
+ */
+export interface SignalAnalysis {
+  /** Confidence score (0-100) */
+  score: number;
+
+  /** Detected signals */
+  signals: MuslimSignal[];
+
+  /** Is this high confidence (score >= 50)? */
+  isHighConfidence: boolean;
 }
 
+// =============================================================================
+// SCRAPER RESULTS
+// =============================================================================
+
+/**
+ * Error from scraping
+ */
 export interface ScraperError {
+  /** Source that errored */
   source: DataSource;
+
+  /** Error message */
   message: string;
+
+  /** Error code if available */
   code?: string;
+
+  /** Can this error be retried? */
   retryable?: boolean;
 }
 
+/**
+ * Statistics for a scraper run
+ */
 export interface ScraperStats {
-  totalFound: number;
-  totalSaved: number;
-  duplicatesSkipped: number;
-  lowConfidenceSkipped: number;
-  bySource: Record<DataSource, number>;
-  byCategory: Record<BusinessCategory, number>;
-  averageConfidence: number;
-  processingTime: number; // ms
+  /** Total establishments found */
+  found: number;
+
+  /** Successfully imported to database */
+  imported: number;
+
+  /** Skipped (duplicates, validation failures) */
+  skipped: number;
+
+  /** Errors encountered */
+  errors: number;
+
+  /** Successfully geocoded */
+  geocoded: number;
+
+  /** Failed geocoding */
+  geocodeFailed: number;
 }
 
-// Filter presets
-export interface FilterPreset {
-  id: string;
-  name: string;
-  description: string;
-  config: Partial<ScraperConfig>;
-  icon?: string;
+/**
+ * Result from running a scraper
+ */
+export interface ScraperResult {
+  /** Did the scraper succeed? */
+  success: boolean;
+
+  /** Which source was scraped */
+  source: DataSource;
+
+  /** Establishments found */
+  establishments: ScrapedEstablishment[];
+
+  /** Statistics */
+  stats: ScraperStats;
+
+  /** Errors encountered */
+  errors: ScraperError[];
+
+  /** Processing duration in ms */
+  duration: number;
 }
 
-// Import formats
+// =============================================================================
+// GEOCODING
+// =============================================================================
+
+/**
+ * Result from geocoding an address
+ */
+export interface GeocodingResult {
+  /** Latitude */
+  latitude: number;
+
+  /** Longitude */
+  longitude: number;
+
+  /** Formatted address from geocoder */
+  formattedAddress?: string;
+
+  /** Confidence in the result (0-100) */
+  confidence: number;
+
+  /** Source of the geocoding */
+  source: "nominatim" | "mapbox" | "google" | "fallback";
+}
+
+// =============================================================================
+// ADDRESS PARSING
+// =============================================================================
+
+/**
+ * Parsed address components
+ */
+export interface ParsedAddress {
+  /** Street address */
+  street: string;
+
+  /** City */
+  city: string;
+
+  /** State (2-letter) */
+  state: string;
+
+  /** ZIP/postal code */
+  postalCode: string;
+
+  /** Country */
+  country: string;
+}
+
+/**
+ * Default values for address parsing
+ */
+export interface AddressDefaults {
+  city?: string;
+  state?: string;
+  country?: string;
+}
+
+// =============================================================================
+// DUPLICATE DETECTION
+// =============================================================================
+
+/**
+ * Result of duplicate checking
+ */
+export interface DuplicateCheck {
+  /** Is this a duplicate? */
+  isDuplicate: boolean;
+
+  /** ID of the matching record */
+  existingId?: string;
+
+  /** Type of match */
+  matchType?: "scraped" | "business";
+
+  /** Field that matched */
+  matchField?: "name_address" | "phone" | "name_city";
+}
+
+// =============================================================================
+// IMPORT FORMATS
+// =============================================================================
+
+/**
+ * Row format for CSV imports
+ */
 export interface CSVImportRow {
   name: string;
   address: string;
   city: string;
   state: string;
-  zipCode: string;
+  zipCode?: string;
   phone?: string;
   email?: string;
   website?: string;
   category?: string;
   description?: string;
   tags?: string; // comma-separated
+  latitude?: string;
+  longitude?: string;
   [key: string]: string | undefined;
 }
 
+/**
+ * Format for JSON imports
+ */
 export interface JSONImportData {
-  businesses: Partial<ScrapedBusiness>[];
+  businesses: Partial<ScrapedEstablishment>[];
   source?: string;
   importedAt?: string;
 }
 
-// Geocoding result
-export interface GeocodingResult {
-  latitude: number;
-  longitude: number;
-  formattedAddress?: string;
-  confidence: number;
-  source: "mapbox" | "google" | "nominatim" | "cache";
+// =============================================================================
+// REGIONAL CHAPTER CONFIGURATION
+// =============================================================================
+
+/**
+ * Configuration for a regional chapter/page to scrape
+ */
+export interface RegionalChapter {
+  /** Region name (e.g., 'Bay Area', 'Chicago') */
+  region: string;
+
+  /** URL to scrape */
+  url: string;
+
+  /** Default state for this region */
+  state: string;
+
+  /** Default city if not specified in data */
+  defaultCity?: string;
 }
 
-// Duplicate detection result
-export interface DuplicateCheck {
-  isDuplicate: boolean;
-  matchedId?: string;
-  matchedName?: string;
-  similarity: number;
-  matchType: "exact" | "fuzzy_name" | "address" | "phone" | "combined";
+// =============================================================================
+// LOGGER
+// =============================================================================
+
+/**
+ * Simple logger interface for scrapers
+ */
+export interface Logger {
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
+  debug(message: string, ...args: unknown[]): void;
 }

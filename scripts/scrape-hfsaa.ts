@@ -1,16 +1,18 @@
 #!/usr/bin/env npx tsx
 /**
- * HMS Scraper Script
+ * HFSAA Scraper Script
  *
- * Standalone script to scrape HMS (Halal Monitoring Services)
+ * Standalone script to scrape HFSAA (Halal Food Standards Alliance of America)
  * certified business listings.
  *
  * Usage:
- *   npx tsx scripts/scrape-hms.ts
- *   npx tsx scripts/scrape-hms.ts --state=NJ --verbose
- *   npx tsx scripts/scrape-hms.ts --dry-run
+ *   npx tsx scripts/scrape-hfsaa.ts
+ *   npx tsx scripts/scrape-hfsaa.ts --region="Bay Area"
+ *   npx tsx scripts/scrape-hfsaa.ts --state=CA --verbose
+ *   npx tsx scripts/scrape-hfsaa.ts --dry-run
  *
  * Options:
+ *   --region=<name>     Filter by region (e.g., "Bay Area", "Chicago")
  *   --state=<code>      Filter by state (2-letter abbreviation)
  *   --max=<number>      Max results
  *   --dry-run           Don't save to database, just show results
@@ -28,6 +30,7 @@ import type { ScraperConfig } from "../lib/scraper/types";
 // =============================================================================
 
 function parseArgs(): {
+  region?: string;
   state?: string;
   maxResults?: number;
   dryRun: boolean;
@@ -37,6 +40,7 @@ function parseArgs(): {
 } {
   const args = process.argv.slice(2);
   const result = {
+    region: undefined as string | undefined,
     state: undefined as string | undefined,
     maxResults: undefined as number | undefined,
     dryRun: false,
@@ -54,6 +58,8 @@ function parseArgs(): {
       result.verbose = true;
     } else if (arg === "--skip-geocoding") {
       result.skipGeocoding = true;
+    } else if (arg.startsWith("--region=")) {
+      result.region = arg.split("=")[1];
     } else if (arg.startsWith("--state=")) {
       result.state = arg.split("=")[1].toUpperCase();
     } else if (arg.startsWith("--max=")) {
@@ -66,15 +72,15 @@ function parseArgs(): {
 
 function showHelp(): void {
   console.log(`
-HMS Scraper Script
+HFSAA Scraper Script
 
-Scrapes HMS (Halal Monitoring Services) certified business listings using Puppeteer.
-HMS uses scroll-based lazy loading, so this script scrolls to load all content.
+Scrapes HFSAA certified business listings using Puppeteer.
 
 Usage:
-  npx tsx scripts/scrape-hms.ts [options]
+  npx tsx scripts/scrape-hfsaa.ts [options]
 
 Options:
+  --region=<name>     Filter by region (e.g., "Bay Area", "Chicago")
   --state=<code>      Filter by state (2-letter abbreviation)
   --max=<number>      Max results
   --dry-run           Don't save to database, just show results
@@ -82,18 +88,29 @@ Options:
   --skip-geocoding    Skip geocoding addresses
   --help              Show this help message
 
-HMS Coverage:
-  HMS primarily certifies businesses on the East Coast and Midwest:
+Available Regions:
+  - Bay Area (CA)
+  - Southern California (CA)
+  - Chicago (IL)
+  - Houston (TX)
+  - Dallas/Fort Worth (TX)
+  - Atlanta (GA)
+  - New York Metro (NY)
   - New Jersey (NJ)
-  - New York (NY)
-  - Pennsylvania (PA)
   - Michigan (MI)
-  - And other states
+  - Ohio (OH)
+  - Virginia/DC (VA)
+  - Pennsylvania (PA)
+  - Florida (FL)
+  - North Carolina (NC)
+  - Tennessee (TN)
+  - Arizona (AZ)
 
 Examples:
-  npx tsx scripts/scrape-hms.ts                    # Scrape all HMS listings
-  npx tsx scripts/scrape-hms.ts --state=NJ --verbose
-  npx tsx scripts/scrape-hms.ts --dry-run --max=20
+  npx tsx scripts/scrape-hfsaa.ts                    # Scrape all regions
+  npx tsx scripts/scrape-hfsaa.ts --region="Bay Area"
+  npx tsx scripts/scrape-hfsaa.ts --state=CA --verbose
+  npx tsx scripts/scrape-hfsaa.ts --dry-run --max=10
 `);
 }
 
@@ -105,7 +122,7 @@ async function dryRun(config: ScraperConfig): Promise<void> {
   console.log("\n=== DRY RUN MODE ===");
   console.log("Not saving to database, just showing what would be scraped.\n");
 
-  const scraper = getScraperSource("hms", config.verbose);
+  const scraper = getScraperSource("hfsaa", config.verbose);
   const establishments = await scraper.scrape(config);
 
   console.log(`\nFound ${establishments.length} establishments:\n`);
@@ -113,7 +130,8 @@ async function dryRun(config: ScraperConfig): Promise<void> {
   for (const est of establishments) {
     console.log(`${est.name}`);
     console.log(`  Address: ${est.address}`);
-    console.log(`  City: ${est.city}, ${est.state} ${est.postalCode || ""}`);
+    console.log(`  City: ${est.city}, ${est.state}`);
+    console.log(`  Region: ${est.region || "N/A"}`);
     if (est.phone) console.log(`  Phone: ${est.phone}`);
     if (est.website) console.log(`  Website: ${est.website}`);
     console.log();
@@ -132,18 +150,19 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  console.log("=== HMS (Halal Monitoring Services) Scraper ===\n");
-  console.log("This script uses Puppeteer to scrape HMS certified listings.");
-  console.log("Uses scroll-based lazy loading to get all results.");
+  console.log("=== HFSAA (Halal Food Standards Alliance of America) Scraper ===\n");
+  console.log("This script uses Puppeteer to scrape HFSAA certified listings.");
   console.log("Data will be saved to the ScrapedBusiness table for admin review.\n");
 
+  if (args.region) console.log(`Region filter: ${args.region}`);
   if (args.state) console.log(`State filter: ${args.state}`);
   if (args.maxResults) console.log(`Max results: ${args.maxResults}`);
   if (args.dryRun) console.log("Mode: DRY RUN");
   console.log();
 
   const config: ScraperConfig = {
-    sources: ["hms"],
+    sources: ["hfsaa"],
+    region: args.region,
     state: args.state,
     maxResults: args.maxResults,
     verbose: args.verbose,

@@ -1,420 +1,396 @@
 /**
  * HFSAA (Halal Food Standards Alliance of America) Scraper
  *
- * Cheerio-based scraper for HFSAA regional chapter pages.
- * For JavaScript-rendered pages (Elfsight widgets), use the CLI script: scripts/scrape-hfsaa-browser.ts
+ * Scrapes certified business listings from HFSAA regional chapter pages.
+ * Uses Puppeteer because HFSAA uses Elfsight widgets that require JavaScript.
+ *
+ * HFSAA chapters:
+ * - Chicago, IL
+ * - Bay Area, CA
+ * - Houston, TX
+ * - Dallas/Fort Worth, TX
+ * - Atlanta, GA
+ * - New York Metro, NY/NJ
+ * - Michigan/Detroit, MI
+ * - Southern California, CA
+ * - And more...
  */
 
-import * as cheerio from "cheerio";
-import {
-  ScrapedBusiness,
+import type { Page } from "puppeteer";
+import { BrowserScraperSource } from "./base";
+import type {
   ScraperConfig,
-  ScraperError,
-  BusinessCategory,
-  BusinessTag,
-  MuslimSignal,
+  ScrapedEstablishment,
+  RegionalChapter,
 } from "../types";
-import { analyzeMuslimSignals, detectTags, sleep } from "../utils";
 
 // =============================================================================
-// TYPES
+// HFSAA SCRAPER
 // =============================================================================
 
-interface HFSAAEstablishment {
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  phone?: string;
-  website?: string;
-  category: string;
-  region: string;
-}
+export class HFSAAScraperSource extends BrowserScraperSource {
+  name = "hfsaa" as const;
+  displayName = "HFSAA";
+  description = "Halal Food Standards Alliance of America certified establishments";
 
-interface RegionalChapter {
-  region: string;
-  url: string;
-  defaultState: string;
-  defaultCity: string;
-}
+  /**
+   * HFSAA regional chapter URLs
+   */
+  protected chapters: RegionalChapter[] = [
+    // California
+    { region: "Bay Area", url: "https://hfsaa.org/bayarea/", state: "CA", defaultCity: "Fremont" },
+    { region: "Southern California", url: "https://hfsaa.org/socal/", state: "CA", defaultCity: "Los Angeles" },
 
-// =============================================================================
-// CONFIGURATION
-// =============================================================================
+    // Illinois
+    { region: "Chicago", url: "https://hfsaa.org/chicago/", state: "IL", defaultCity: "Chicago" },
 
-/**
- * HFSAA Regional Chapter URLs
- * Note: Some chapters use Elfsight widgets which require browser-based scraping
- */
-const REGIONAL_CHAPTERS: RegionalChapter[] = [
-  // Midwest chapters
-  { region: "Chicago", url: "https://www.hfsaa.org/chicago", defaultState: "IL", defaultCity: "Chicago" },
-  { region: "Detroit", url: "https://www.hfsaa.org/detroit", defaultState: "MI", defaultCity: "Detroit" },
-  { region: "Indianapolis", url: "https://www.hfsaa.org/indianapolis", defaultState: "IN", defaultCity: "Indianapolis" },
-  { region: "Columbus", url: "https://www.hfsaa.org/columbus", defaultState: "OH", defaultCity: "Columbus" },
-  // Northeast chapters
-  { region: "New York", url: "https://www.hfsaa.org/newyork", defaultState: "NY", defaultCity: "New York" },
-  { region: "New Jersey", url: "https://www.hfsaa.org/newjersey", defaultState: "NJ", defaultCity: "Newark" },
-  { region: "Pennsylvania", url: "https://www.hfsaa.org/pennsylvania", defaultState: "PA", defaultCity: "Philadelphia" },
-  // West chapters
-  { region: "Bay Area", url: "https://www.hfsaa.org/bayarea", defaultState: "CA", defaultCity: "Fremont" },
-  { region: "Los Angeles", url: "https://www.hfsaa.org/losangeles", defaultState: "CA", defaultCity: "Los Angeles" },
-  { region: "Seattle", url: "https://www.hfsaa.org/seattle", defaultState: "WA", defaultCity: "Seattle" },
-  // Southeast chapters
-  { region: "Atlanta", url: "https://www.hfsaa.org/atlanta", defaultState: "GA", defaultCity: "Atlanta" },
-  { region: "Florida", url: "https://www.hfsaa.org/florida", defaultState: "FL", defaultCity: "Miami" },
-  // South chapters
-  { region: "Texas", url: "https://www.hfsaa.org/texas", defaultState: "TX", defaultCity: "Houston" },
-  { region: "Dallas", url: "https://www.hfsaa.org/dallas", defaultState: "TX", defaultCity: "Dallas" },
-];
+    // Texas
+    { region: "Houston", url: "https://hfsaa.org/houston/", state: "TX", defaultCity: "Houston" },
+    { region: "Dallas/Fort Worth", url: "https://hfsaa.org/dfw/", state: "TX", defaultCity: "Dallas" },
 
-/**
- * State name to abbreviation mapping
- */
-const STATE_ABBREVIATIONS: Record<string, string> = {
-  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR",
-  california: "CA", colorado: "CO", connecticut: "CT", delaware: "DE",
-  florida: "FL", georgia: "GA", hawaii: "HI", idaho: "ID",
-  illinois: "IL", indiana: "IN", iowa: "IA", kansas: "KS",
-  kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
-  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
-  missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
-  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
-  "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
-  oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
-  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT",
-  vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
-  wisconsin: "WI", wyoming: "WY",
-};
+    // Georgia
+    { region: "Atlanta", url: "https://hfsaa.org/atlanta/", state: "GA", defaultCity: "Atlanta" },
 
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
+    // New York/New Jersey
+    { region: "New York Metro", url: "https://hfsaa.org/nymetro/", state: "NY", defaultCity: "New York" },
+    { region: "New Jersey", url: "https://hfsaa.org/newjersey/", state: "NJ", defaultCity: "Paterson" },
 
-/**
- * Parse a full address string into components
- */
-function parseAddress(
-  fullAddress: string,
-  defaults: { state: string; city: string }
-): { address: string; city: string; state: string; postalCode: string } {
-  // Default result
-  const result = {
-    address: fullAddress.trim(),
-    city: defaults.city,
-    state: defaults.state,
-    postalCode: "",
-  };
+    // Michigan
+    { region: "Michigan", url: "https://hfsaa.org/michigan/", state: "MI", defaultCity: "Dearborn" },
 
-  // Try to extract ZIP code (5 digits, optionally followed by -4 digits)
-  const zipMatch = fullAddress.match(/\b(\d{5})(?:-\d{4})?\b/);
-  if (zipMatch) {
-    result.postalCode = zipMatch[1];
-  }
+    // Ohio
+    { region: "Ohio", url: "https://hfsaa.org/ohio/", state: "OH", defaultCity: "Columbus" },
 
-  // Split by common delimiters
-  const parts = fullAddress.split(/[,\n]+/).map((p) => p.trim()).filter(Boolean);
+    // Virginia/DC
+    { region: "Virginia/DC", url: "https://hfsaa.org/virginia/", state: "VA", defaultCity: "Fairfax" },
 
-  if (parts.length >= 3) {
-    // Format: "123 Main St, City, ST 12345" or "123 Main St, City, State"
-    result.address = parts[0];
-    result.city = parts[1].replace(/\d{5}(-\d{4})?/, "").trim();
+    // Pennsylvania
+    { region: "Pennsylvania", url: "https://hfsaa.org/pennsylvania/", state: "PA", defaultCity: "Philadelphia" },
 
-    // Try to parse state from last part
-    const statePart = parts[parts.length - 1];
-    const stateMatch = statePart.match(/([A-Z]{2})\s*\d{5}/) || statePart.match(/^([A-Z]{2})$/);
-    if (stateMatch) {
-      result.state = stateMatch[1];
-    } else {
-      // Try full state name
-      const stateLower = statePart.replace(/\d+/g, "").trim().toLowerCase();
-      if (STATE_ABBREVIATIONS[stateLower]) {
-        result.state = STATE_ABBREVIATIONS[stateLower];
+    // Florida
+    { region: "Florida", url: "https://hfsaa.org/florida/", state: "FL", defaultCity: "Miami" },
+
+    // North Carolina
+    { region: "North Carolina", url: "https://hfsaa.org/northcarolina/", state: "NC", defaultCity: "Charlotte" },
+
+    // Tennessee
+    { region: "Tennessee", url: "https://hfsaa.org/tennessee/", state: "TN", defaultCity: "Nashville" },
+
+    // Arizona
+    { region: "Arizona", url: "https://hfsaa.org/arizona/", state: "AZ", defaultCity: "Phoenix" },
+  ];
+
+  /**
+   * Scrape a single HFSAA chapter page
+   */
+  protected async scrapeChapter(
+    chapter: RegionalChapter,
+    config: ScraperConfig
+  ): Promise<ScrapedEstablishment[]> {
+    const establishments: ScrapedEstablishment[] = [];
+    const page = await this.createPage();
+
+    try {
+      // Navigate to chapter page
+      await page.goto(chapter.url, {
+        waitUntil: "networkidle2",
+        timeout: 30000,
+      });
+
+      // Wait for Elfsight widget to load
+      await this.sleep(3000);
+
+      // Check for Elfsight widget
+      const hasElfsight = await this.waitForElement(
+        page,
+        '[class*="elfsight"], [class*="eapps"], iframe[src*="elfsight"]',
+        10000
+      );
+
+      if (!hasElfsight) {
+        this.logger.warn(`  No Elfsight widget found on ${chapter.region}`);
+
+        // Try to find any listing elements
+        const rawEstablishments = await this.extractFromGenericPage(page, chapter);
+        establishments.push(...rawEstablishments);
+      } else {
+        // Click "Load More" buttons until all content is loaded
+        await this.loadAllContent(page);
+
+        // Extract establishments from Elfsight widget
+        const rawEstablishments = await this.extractFromElfsightWidget(page, chapter);
+        establishments.push(...rawEstablishments);
       }
-    }
-  } else if (parts.length === 2) {
-    // Format: "123 Main St, City ST 12345"
-    result.address = parts[0];
-    const cityStatePart = parts[1];
-    const cityStateMatch = cityStatePart.match(/^(.+?)\s+([A-Z]{2})\s*(\d{5})?/);
-    if (cityStateMatch) {
-      result.city = cityStateMatch[1].trim();
-      result.state = cityStateMatch[2];
-      if (cityStateMatch[3]) {
-        result.postalCode = cityStateMatch[3];
+
+      // Apply max results limit
+      if (config.maxResults && establishments.length > config.maxResults) {
+        return establishments.slice(0, config.maxResults);
       }
-    } else {
-      result.city = cityStatePart.replace(/\d{5}(-\d{4})?/, "").trim();
-    }
-  }
 
-  return result;
-}
-
-/**
- * Map HFSAA category to BusinessCategory enum
- */
-function mapCategory(hfsaaCategory: string): BusinessCategory {
-  const categoryMap: Record<string, BusinessCategory> = {
-    restaurants: "RESTAURANT",
-    restaurant: "RESTAURANT",
-    butcheries: "BUTCHER",
-    butcher: "BUTCHER",
-    "meat shop": "BUTCHER",
-    grocery: "GROCERY",
-    groceries: "GROCERY",
-    "grocery store": "GROCERY",
-    bakeries: "BAKERY",
-    bakery: "BAKERY",
-    catering: "CATERING",
-    "food truck": "FOOD_TRUCK",
-    market: "GROCERY",
-    supermarket: "GROCERY",
-  };
-
-  const normalized = hfsaaCategory.toLowerCase().trim();
-  return categoryMap[normalized] || "RESTAURANT";
-}
-
-/**
- * Clean and normalize text
- */
-function cleanText(text: string): string {
-  return text
-    .replace(/\s+/g, " ")
-    .replace(/[\r\n\t]+/g, " ")
-    .trim();
-}
-
-// =============================================================================
-// SCRAPING FUNCTIONS
-// =============================================================================
-
-/**
- * Scrape a single HFSAA regional page using Cheerio
- */
-async function scrapeRegionalPage(
-  chapter: RegionalChapter
-): Promise<HFSAAEstablishment[]> {
-  const establishments: HFSAAEstablishment[] = [];
-
-  try {
-    const response = await fetch(chapter.url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`Failed to fetch ${chapter.region}: ${response.status}`);
       return establishments;
+    } finally {
+      await page.close();
     }
+  }
 
-    const html = await response.text();
-    const $ = cheerio.load(html);
+  /**
+   * Load all content by clicking "Load More" buttons
+   */
+  private async loadAllContent(page: Page): Promise<void> {
+    let loadMoreClicks = 0;
+    const maxClicks = 20;
 
-    // Try different page structures
+    while (loadMoreClicks < maxClicks) {
+      // Try various "Load More" selectors
+      const loadMoreSelectors = [
+        'button:contains("Load More")',
+        '[class*="load-more"]',
+        '[class*="show-more"]',
+        'a:contains("Load More")',
+        'button[class*="more"]',
+      ];
 
-    // Structure 1: Table-based listing
-    $("table tr").each((_idx, row) => {
-      const cells = $(row).find("td");
-      if (cells.length >= 2) {
-        const name = cleanText($(cells[0]).text());
-        const addressText = cleanText($(cells[1]).text());
-        const phone = cells.length > 2 ? cleanText($(cells[2]).text()) : undefined;
+      let clicked = false;
 
-        if (name && name.length > 2 && !name.toLowerCase().includes("establishment")) {
-          const parsed = parseAddress(addressText, {
-            state: chapter.defaultState,
-            city: chapter.defaultCity,
-          });
+      for (const selector of loadMoreSelectors) {
+        try {
+          const button = await page.$(selector);
+          if (button) {
+            const isVisible = await page.evaluate(
+              (el) => {
+                const style = window.getComputedStyle(el);
+                return (
+                  style.display !== "none" &&
+                  style.visibility !== "hidden" &&
+                  style.opacity !== "0"
+                );
+              },
+              button
+            );
 
-          establishments.push({
-            name,
-            ...parsed,
-            phone: phone && phone.match(/\d/) ? phone : undefined,
-            category: "restaurants",
-            region: chapter.region,
-          });
+            if (isVisible) {
+              await button.click();
+              await this.sleep(1500);
+              clicked = true;
+              loadMoreClicks++;
+              this.logger.debug(`  Clicked Load More (${loadMoreClicks})`);
+              break;
+            }
+          }
+        } catch {
+          // Selector not found or not clickable
         }
       }
-    });
 
-    // Structure 2: List-based (ul/li) listing
-    if (establishments.length === 0) {
-      $("ul li, .establishment, .business-listing, .listing-item").each((_idx, item) => {
-        const text = cleanText($(item).text());
+      if (!clicked) {
+        // No more "Load More" buttons found
+        break;
+      }
+    }
+  }
 
-        // Try to extract name (usually first line or before address)
-        const lines = text.split(/[\n,]+/).map((l) => l.trim()).filter(Boolean);
-        if (lines.length >= 2) {
-          const name = lines[0];
-          const addressText = lines.slice(1).join(", ");
+  /**
+   * Extract establishments from Elfsight widget
+   */
+  private async extractFromElfsightWidget(
+    page: Page,
+    chapter: RegionalChapter
+  ): Promise<ScrapedEstablishment[]> {
+    return page.evaluate(
+      (chapterData) => {
+        const results: ScrapedEstablishment[] = [];
 
-          if (name && name.length > 2 && !name.toLowerCase().includes("click") && !name.toLowerCase().includes("view")) {
-            const parsed = parseAddress(addressText, {
-              state: chapter.defaultState,
-              city: chapter.defaultCity,
-            });
+        // Try multiple selector patterns for Elfsight widgets
+        const cardSelectors = [
+          '[class*="eapps-google-maps-store"]',
+          '[class*="store-item"]',
+          '[class*="listing-item"]',
+          '[class*="business-card"]',
+          '[class*="location-card"]',
+          '.card',
+          'article',
+        ];
 
-            establishments.push({
-              name,
-              ...parsed,
-              category: "restaurants",
-              region: chapter.region,
-            });
+        let cards: Element[] = [];
+        for (const selector of cardSelectors) {
+          const found = document.querySelectorAll(selector);
+          if (found.length > 0) {
+            cards = Array.from(found);
+            break;
           }
         }
-      });
-    }
 
-    // Structure 3: Card-based layout
-    if (establishments.length === 0) {
-      $(".card, .business-card, .establishment-card, [class*='listing']").each((_idx, card) => {
-        const nameEl = $(card).find("h2, h3, h4, .title, .name, [class*='name']").first();
-        const addressEl = $(card).find(".address, [class*='address'], p").first();
-        const phoneEl = $(card).find(".phone, [class*='phone'], a[href^='tel']").first();
-        const websiteEl = $(card).find("a[href^='http']").first();
+        for (const card of cards) {
+          // Try to extract name
+          const nameEl = card.querySelector(
+            '[class*="title"], [class*="name"], h2, h3, h4, strong'
+          );
+          const name = nameEl?.textContent?.trim();
 
-        const name = cleanText(nameEl.text());
-        const addressText = cleanText(addressEl.text());
+          if (!name || name.length < 2) continue;
 
-        if (name && name.length > 2) {
-          const parsed = parseAddress(addressText || "", {
-            state: chapter.defaultState,
-            city: chapter.defaultCity,
-          });
+          // Try to extract address
+          const addressEl = card.querySelector(
+            '[class*="address"], [class*="location"], p'
+          );
+          const address = addressEl?.textContent?.trim() || "";
 
-          establishments.push({
+          // Try to extract phone
+          const phoneEl = card.querySelector(
+            '[class*="phone"], a[href^="tel:"]'
+          );
+          let phone = phoneEl?.textContent?.trim();
+          if (!phone && phoneEl) {
+            const href = phoneEl.getAttribute("href");
+            if (href?.startsWith("tel:")) {
+              phone = href.replace("tel:", "");
+            }
+          }
+
+          // Try to extract website
+          const websiteEl = card.querySelector(
+            'a[href^="http"]:not([href*="tel:"]):not([href*="mailto:"])'
+          );
+          const website = (websiteEl as HTMLAnchorElement)?.href;
+
+          // Try to extract description
+          const descEl = card.querySelector(
+            '[class*="description"], [class*="bio"], p:not([class*="address"])'
+          );
+          const description = descEl?.textContent?.trim();
+
+          results.push({
             name,
-            ...parsed,
-            phone: cleanText(phoneEl.text()) || undefined,
-            website: websiteEl.attr("href") || undefined,
-            category: "restaurants",
-            region: chapter.region,
+            address: address || "Address not provided",
+            city: chapterData.defaultCity || "",
+            state: chapterData.state,
+            country: "USA",
+            phone: phone || undefined,
+            website: website || undefined,
+            description: description || undefined,
+            category: "restaurant", // Default, will be mapped
+            region: chapterData.region,
+            certificationBody: "HFSAA",
+            sourceUrl: chapterData.url,
           });
         }
-      });
-    }
 
-    console.log(`Scraped ${establishments.length} establishments from ${chapter.region}`);
-  } catch (error) {
-    console.error(`Error scraping ${chapter.region}:`, error);
-  }
-
-  return establishments;
-}
-
-// =============================================================================
-// MAIN EXPORT
-// =============================================================================
-
-/**
- * Scrape HFSAA certified businesses
- *
- * This Cheerio-based scraper works for static HTML pages.
- * For pages using Elfsight widgets (JavaScript-rendered), use the CLI script:
- * npx tsx scripts/scrape-hfsaa-browser.ts
- */
-export async function scrapeHFSAA(
-  config: ScraperConfig
-): Promise<{ businesses: ScrapedBusiness[]; errors: ScraperError[] }> {
-  const businesses: ScrapedBusiness[] = [];
-  const errors: ScraperError[] = [];
-
-  // Determine which regions to scrape
-  let chaptersToScrape = REGIONAL_CHAPTERS;
-
-  // Filter by state if specified
-  if (config.state) {
-    const stateUpper = config.state.toUpperCase();
-    chaptersToScrape = REGIONAL_CHAPTERS.filter(
-      (c) => c.defaultState === stateUpper
+        return results;
+      },
+      chapter
     );
   }
 
-  // Limit number of regions for API route timeout safety (max 3 at a time)
-  const maxRegions = 3;
-  if (chaptersToScrape.length > maxRegions) {
-    console.log(`Limiting to ${maxRegions} regions for API timeout safety`);
-    chaptersToScrape = chaptersToScrape.slice(0, maxRegions);
+  /**
+   * Extract from a generic page without Elfsight widget
+   */
+  private async extractFromGenericPage(
+    page: Page,
+    chapter: RegionalChapter
+  ): Promise<ScrapedEstablishment[]> {
+    return page.evaluate(
+      (chapterData) => {
+        const results: ScrapedEstablishment[] = [];
+        const pageText = document.body.innerText;
+
+        // Try to find business listings in the page text
+        // Look for patterns like "Business Name\nAddress\nPhone"
+        const lines = pageText.split("\n").map((l) => l.trim()).filter(Boolean);
+
+        let currentBusiness: Partial<ScrapedEstablishment> | null = null;
+
+        for (const line of lines) {
+          // Skip navigation/menu items
+          if (
+            line.length < 3 ||
+            line.includes("Menu") ||
+            line.includes("Contact") ||
+            line.includes("About")
+          ) {
+            continue;
+          }
+
+          // Check if this looks like an address
+          const addressPattern = /^\d+\s+\w+.*(?:St|Ave|Rd|Blvd|Dr|Way|Ln|Ct)/i;
+          const cityStatePattern = /^[\w\s]+,\s*[A-Z]{2}\s*\d{5}/i;
+
+          if (addressPattern.test(line)) {
+            if (currentBusiness?.name) {
+              currentBusiness.address = line;
+            }
+          } else if (cityStatePattern.test(line)) {
+            if (currentBusiness?.name) {
+              // Parse city, state, zip from line
+              const match = line.match(/^(.+?),\s*([A-Z]{2})\s*(\d{5})?/);
+              if (match) {
+                currentBusiness.city = match[1].trim();
+                currentBusiness.state = match[2];
+                if (match[3]) {
+                  currentBusiness.postalCode = match[3];
+                }
+              }
+
+              // Save and reset
+              if (currentBusiness.name && currentBusiness.address) {
+                results.push({
+                  name: currentBusiness.name,
+                  address: currentBusiness.address,
+                  city: currentBusiness.city || chapterData.defaultCity || "",
+                  state: currentBusiness.state || chapterData.state,
+                  postalCode: currentBusiness.postalCode,
+                  country: "USA",
+                  phone: currentBusiness.phone,
+                  website: currentBusiness.website,
+                  category: "restaurant",
+                  region: chapterData.region,
+                  certificationBody: "HFSAA",
+                  sourceUrl: chapterData.url,
+                });
+              }
+
+              currentBusiness = null;
+            }
+          } else if (line.match(/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/)) {
+            // Phone number
+            if (currentBusiness) {
+              currentBusiness.phone = line;
+            }
+          } else if (line.length > 3 && line.length < 100 && !line.includes("@")) {
+            // Might be a business name
+            currentBusiness = {
+              name: line,
+              state: chapterData.state,
+            };
+          }
+        }
+
+        return results;
+      },
+      chapter
+    );
   }
-
-  for (const chapter of chaptersToScrape) {
-    try {
-      const establishments = await scrapeRegionalPage(chapter);
-
-      for (const est of establishments) {
-        // Skip if name is too short or looks invalid
-        if (!est.name || est.name.length < 3) continue;
-
-        // Build combined text for signal analysis
-        const combinedText = `${est.name} HFSAA halal certified zabiha ${est.category}`;
-        const { score, signals } = analyzeMuslimSignals(combinedText, est.name);
-        const { detected } = detectTags(combinedText, est.name, signals);
-
-        // Map category
-        const category = mapCategory(est.category);
-
-        // Build ScrapedBusiness
-        const business: ScrapedBusiness = {
-          name: est.name,
-          description: `HFSAA certified halal ${est.category} in ${est.city}, ${est.state}`,
-          category,
-          suggestedCategories: [],
-          tags: [
-            ...detected,
-            "HALAL_VERIFIED" as BusinessTag,
-            "ZABIHA_CERTIFIED" as BusinessTag,
-          ],
-          suggestedTags: [],
-          address: est.address,
-          city: est.city || config.city,
-          state: est.state || config.state,
-          zipCode: est.postalCode || config.zipCode || "",
-          phone: est.phone,
-          website: est.website,
-          // Boost confidence for HFSAA certified businesses
-          confidence: Math.min(score + 35, 100),
-          signals,
-          verificationLevel: "OFFICIALLY_CERTIFIED",
-          source: "hfsaa",
-          sourceUrl: chapter.url,
-          sourceId: `hfsaa_${est.region.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-          scrapedAt: new Date(),
-          metadata: {
-            region: est.region,
-            certificationBody: "HFSAA",
-          },
-        };
-
-        businesses.push(business);
-      }
-
-      // Rate limiting between regions
-      await sleep(config.rateLimit || 1000);
-    } catch (error) {
-      errors.push({
-        source: "hfsaa",
-        message: `Failed to scrape ${chapter.region}: ${error instanceof Error ? error.message : String(error)}`,
-        retryable: true,
-      });
-    }
-  }
-
-  // Add note about browser-based scraping if few results
-  if (businesses.length === 0) {
-    errors.push({
-      source: "hfsaa",
-      message: "No establishments found. HFSAA pages may use Elfsight widgets requiring browser-based scraping. Run: npx tsx scripts/scrape-hfsaa-browser.ts",
-      retryable: false,
-    });
-  }
-
-  return { businesses, errors };
 }
 
-export default scrapeHFSAA;
+// =============================================================================
+// EXPORT SINGLETON
+// =============================================================================
+
+/**
+ * Create and export HFSAA scraper instance
+ */
+export function createHFSAAScraper(verbose: boolean = false): HFSAAScraperSource {
+  return new HFSAAScraperSource(verbose);
+}
+
+/**
+ * Convenience function to scrape HFSAA directly
+ */
+export async function scrapeHFSAA(
+  config: Partial<ScraperConfig> = {}
+): Promise<ScrapedEstablishment[]> {
+  const scraper = createHFSAAScraper(config.verbose);
+  return scraper.scrape({
+    sources: ["hfsaa"],
+    ...config,
+  });
+}

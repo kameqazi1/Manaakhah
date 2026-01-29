@@ -250,10 +250,10 @@ const ALL_SOURCES: { id: DataSource; name: string; description: string; implemen
   // IMPLEMENTED - Halal certification directories
   { id: "hfsaa", name: "HFSAA", description: "Halal Food Standards Alliance of America - certified listings", implemented: true },
   { id: "hms", name: "HMS", description: "Halal Monitoring Services USA - certified listings", implemented: true },
+  { id: "zabihah", name: "Zabihah", description: "Zabihah.com - halal restaurant directory", implemented: true },
+  { id: "ifanca", name: "IFANCA", description: "IFANCA certified manufacturers & processors", implemented: true },
   // NOT YET IMPLEMENTED
-  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (coming soon)", implemented: false },
-  { id: "ifanca", name: "IFANCA", description: "IFANCA Certification (coming soon)", implemented: false },
-  { id: "zabihah", name: "Zabihah", description: "Halal restaurant directory (coming soon)", implemented: false },
+  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (no public directory)", implemented: false },
   { id: "halaltrip", name: "HalalTrip", description: "Halal travel & dining (coming soon)", implemented: false },
   { id: "muslimpro", name: "Muslim Pro", description: "Halal finder app (coming soon)", implemented: false },
   { id: "google_places", name: "Google Places", description: "Google Maps (coming soon)", implemented: false },

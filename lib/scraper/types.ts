@@ -19,7 +19,12 @@ export type DataSource =
   | "chamberofcommerce"
   | "csv_import"
   | "json_import"
-  | "manual";
+  | "manual"
+  // Halal certification directories
+  | "hfsaa"   // Halal Food Standards Alliance of America
+  | "hms"     // Halal Monitoring Services
+  | "isna"    // ISNA Halal Certification
+  | "ifanca"; // IFANCA Certification
 
 // Business categories (expanded)
 export type BusinessCategory =

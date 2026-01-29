@@ -786,8 +786,35 @@ export async function geocodeAddress(
     }
   }
 
-  // Fallback: Return approximate coordinates for Bay Area
-  // In production, you'd want a proper fallback geocoder
+  // Fallback 1: Try Nominatim (OpenStreetMap) - free, no API key required
+  try {
+    const nominatimQuery = encodeURIComponent(`${fullAddress}, USA`);
+    const nominatimResponse = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${nominatimQuery}&format=json&limit=1`,
+      {
+        headers: {
+          "User-Agent": "Manaakhah/1.0 (Muslim business directory - manaakhah.vercel.app)",
+        },
+      }
+    );
+
+    if (nominatimResponse.ok) {
+      const nominatimData = await nominatimResponse.json();
+      if (nominatimData && nominatimData.length > 0) {
+        return {
+          latitude: parseFloat(nominatimData[0].lat),
+          longitude: parseFloat(nominatimData[0].lon),
+          formattedAddress: nominatimData[0].display_name,
+          confidence: 80, // Nominatim is generally reliable
+          source: "nominatim",
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Nominatim geocoding error:", error);
+  }
+
+  // Fallback 2: Return approximate coordinates for Bay Area cities
   const cityCoordinates: Record<string, { lat: number; lng: number }> = {
     fremont: { lat: 37.5485, lng: -121.9886 },
     "san jose": { lat: 37.3382, lng: -121.8863 },

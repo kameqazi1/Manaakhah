@@ -16,7 +16,12 @@ type DataSource =
   | "halaltrip"
   | "muslimpro"
   | "yellowpages"
-  | "bbb";
+  | "bbb"
+  // Halal certification directories
+  | "hfsaa"
+  | "hms"
+  | "isna"
+  | "ifanca";
 
 type BusinessCategory =
   | "HALAL_FOOD"
@@ -246,6 +251,11 @@ const ALL_SOURCES: { id: DataSource; name: string; description: string }[] = [
   { id: "muslimpro", name: "Muslim Pro", description: "Halal finder app" },
   { id: "yellowpages", name: "Yellow Pages", description: "Business directory" },
   { id: "bbb", name: "BBB", description: "Better Business Bureau" },
+  // Halal certification directories
+  { id: "hfsaa", name: "HFSAA", description: "Halal Food Standards Alliance (certified)" },
+  { id: "hms", name: "HMS", description: "Halal Monitoring Services (CLI only)" },
+  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (coming soon)" },
+  { id: "ifanca", name: "IFANCA", description: "IFANCA Certification (coming soon)" },
 ];
 
 // All categories

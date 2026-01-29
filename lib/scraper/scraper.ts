@@ -35,6 +35,9 @@ import {
   determineVerificationLevel,
 } from "./utils";
 
+// Import halal certification directory scrapers
+import { scrapeHFSAA } from "./sources/hfsaa";
+
 // ============================================================================
 // FILTER PRESETS
 // ============================================================================
@@ -292,6 +295,37 @@ async function scrapeSource(
       return await scrapeFacebook(config);
     case "instagram":
       return await scrapeInstagram(config);
+
+    // Halal certification directories
+    case "hfsaa":
+      return await scrapeHFSAA(config);
+    case "hms":
+      // HMS requires browser-based scraping (Puppeteer) - direct to CLI script
+      return {
+        businesses: [],
+        errors: [
+          {
+            source: "hms",
+            message:
+              "HMS scraping requires browser automation for scroll-based lazy loading. Run: npx tsx scripts/scrape-hms.ts",
+            retryable: false,
+          },
+        ],
+      };
+    case "isna":
+    case "ifanca":
+      // Placeholder for future ISNA/IFANCA scrapers
+      return {
+        businesses: [],
+        errors: [
+          {
+            source,
+            message: `${source.toUpperCase()} scraper not yet implemented`,
+            retryable: false,
+          },
+        ],
+      };
+
     case "csv_import":
     case "json_import":
     case "manual":

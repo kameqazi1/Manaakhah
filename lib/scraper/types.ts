@@ -19,8 +19,8 @@ export type DataSource =
   | "hms" // Halal Monitoring Services
   | "isna" // ISNA Halal Certification
   | "ifanca" // IFANCA Certification
-  | "sanha" // SANHA (if US presence)
-  | "zabihafinder" // ZabihaFinder community directory
+  | "sanha" // SANHA (South Africa - reference only)
+  | "zabihah" // Zabihah.com community directory
   | "csv_import" // CSV file import
   | "json_import" // JSON file import
   | "manual"; // Manual entry
@@ -366,6 +366,12 @@ export interface RegionalChapter {
 
   /** Default city if not specified in data */
   defaultCity?: string;
+
+  /** Optional coordinates for geolocation-based scrapers */
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 // =============================================================================

@@ -390,6 +390,43 @@ export async function quickScrape(
 }
 
 /**
+ * Save scraped establishments to database
+ *
+ * Used by standalone CLI scripts to save results to ScrapedBusiness table.
+ */
+export async function saveScrapedEstablishments(
+  establishments: ScrapedEstablishment[],
+  source: DataSource,
+  options: {
+    skipGeocoding?: boolean;
+    skipDuplicateCheck?: boolean;
+    minConfidence?: number;
+    verbose?: boolean;
+  } = {}
+): Promise<{ imported: number; skipped: number; errors: number }> {
+  const logger = createLogger(options.verbose);
+  const config: ScraperConfig = {
+    sources: [source],
+    skipGeocoding: options.skipGeocoding,
+    skipDuplicateCheck: options.skipDuplicateCheck,
+    minConfidence: options.minConfidence,
+  };
+
+  const { stats } = await processEstablishments(
+    establishments,
+    source,
+    config,
+    logger
+  );
+
+  return {
+    imported: stats.imported,
+    skipped: stats.skipped,
+    errors: stats.errors,
+  };
+}
+
+/**
  * Get scraper status and statistics
  */
 export async function getScraperStatus(): Promise<{

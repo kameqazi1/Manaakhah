@@ -10,6 +10,8 @@ import type { ScraperSource } from "./base";
 // Import scraper classes
 import { HFSAAScraperSource, createHFSAAScraper, scrapeHFSAA } from "./hfsaa";
 import { HMSScraperSource, createHMSScraper, scrapeHMS } from "./hms";
+import { ZabihahScraperSource, createZabihahScraper, scrapeZabihah } from "./zabihah";
+import { IFANCAScraperSource, createIFANCAScraper, scrapeIFANCA } from "./ifanca";
 
 // =============================================================================
 // SCRAPER REGISTRY
@@ -19,21 +21,18 @@ import { HMSScraperSource, createHMSScraper, scrapeHMS } from "./hms";
  * Registry of all available scraper sources
  */
 export const SCRAPER_SOURCES: Record<DataSource, () => ScraperSource> = {
+  // Implemented scrapers
   hfsaa: () => new HFSAAScraperSource(),
   hms: () => new HMSScraperSource(),
+  zabihah: () => new ZabihahScraperSource(),
+  ifanca: () => new IFANCAScraperSource(),
 
-  // Placeholder sources - to be implemented
+  // Placeholder sources - not yet implemented
   isna: () => {
-    throw new Error("ISNA scraper not yet implemented");
-  },
-  ifanca: () => {
-    throw new Error("IFANCA scraper not yet implemented");
+    throw new Error("ISNA scraper not yet implemented - ISNA doesn't have a public certification directory");
   },
   sanha: () => {
-    throw new Error("SANHA scraper not yet implemented");
-  },
-  zabihafinder: () => {
-    throw new Error("ZabihaFinder scraper not yet implemented");
+    throw new Error("SANHA is South African only - not relevant for US directory");
   },
 
   // Import sources - handled separately
@@ -65,6 +64,8 @@ export function getScraperSource(
     // If we want to enable verbose on existing instance, recreate with verbose
     if (source === "hfsaa") return createHFSAAScraper(verbose);
     if (source === "hms") return createHMSScraper(verbose);
+    if (source === "zabihah") return createZabihahScraper(verbose);
+    if (source === "ifanca") return createIFANCAScraper(verbose);
   }
   return scraper;
 }
@@ -73,7 +74,7 @@ export function getScraperSource(
  * Get all implemented scraper sources
  */
 export function getImplementedSources(): DataSource[] {
-  return ["hfsaa", "hms"];
+  return ["hfsaa", "hms", "zabihah", "ifanca"];
 }
 
 /**
@@ -96,6 +97,12 @@ export { HFSAAScraperSource, createHFSAAScraper, scrapeHFSAA };
 
 // HMS
 export { HMSScraperSource, createHMSScraper, scrapeHMS };
+
+// Zabihah
+export { ZabihahScraperSource, createZabihahScraper, scrapeZabihah };
+
+// IFANCA
+export { IFANCAScraperSource, createIFANCAScraper, scrapeIFANCA };
 
 // =============================================================================
 // CONVENIENCE FUNCTIONS
@@ -138,16 +145,28 @@ export function getSourceMetadata(source: DataSource): {
       isna: "ISNA",
       ifanca: "IFANCA",
       sanha: "SANHA",
-      zabihafinder: "ZabihaFinder",
+      zabihah: "Zabihah",
       csv_import: "CSV Import",
       json_import: "JSON Import",
       manual: "Manual Entry",
     };
 
+    const descriptions: Record<DataSource, string> = {
+      hfsaa: "HFSAA certified establishments",
+      hms: "HMS certified establishments",
+      isna: "ISNA (no public directory available)",
+      ifanca: "IFANCA certified manufacturers",
+      sanha: "SANHA (South African only)",
+      zabihah: "Zabihah.com halal restaurant guide",
+      csv_import: "CSV file import",
+      json_import: "JSON file import",
+      manual: "Manual entry",
+    };
+
     return {
       name: source,
       displayName: displayNames[source] || source,
-      description: `${displayNames[source]} scraper (not yet implemented)`,
+      description: descriptions[source] || `${displayNames[source]} scraper`,
       requiresBrowser: false,
       implemented: false,
     };

@@ -139,58 +139,59 @@ export class HFSAAScraperSource extends BrowserScraperSource {
   private async loadAllContent(page: Page): Promise<void> {
     let loadMoreClicks = 0;
     const maxClicks = 20;
+    let previousCount = 0;
 
     while (loadMoreClicks < maxClicks) {
-      // Try various "Load More" selectors
-      const loadMoreSelectors = [
-        'button:contains("Load More")',
-        '[class*="load-more"]',
-        '[class*="show-more"]',
-        'a:contains("Load More")',
-        'button[class*="more"]',
-      ];
-
-      let clicked = false;
-
-      for (const selector of loadMoreSelectors) {
-        try {
-          const button = await page.$(selector);
-          if (button) {
-            const isVisible = await page.evaluate(
-              (el) => {
-                const style = window.getComputedStyle(el);
-                return (
-                  style.display !== "none" &&
-                  style.visibility !== "hidden" &&
-                  style.opacity !== "0"
-                );
-              },
-              button
-            );
-
-            if (isVisible) {
-              await button.click();
-              await this.sleep(1500);
-              clicked = true;
-              loadMoreClicks++;
-              this.logger.debug(`  Clicked Load More (${loadMoreClicks})`);
-              break;
-            }
-          }
-        } catch {
-          // Selector not found or not clickable
+      // Scroll the list container to trigger lazy loading
+      await page.evaluate(() => {
+        const listContainer = document.querySelector('[class*="directory-locations-list__Container"]');
+        if (listContainer) {
+          listContainer.scrollTop = listContainer.scrollHeight;
         }
-      }
+      });
+
+      await this.sleep(500);
+
+      // Click Load More button using the correct selector for Elfsight store locator
+      const clicked = await page.evaluate(() => {
+        const btn = document.querySelector('[class*="directory-locations-list__StyledButton"]') as HTMLElement;
+        if (btn) {
+          const rect = btn.getBoundingClientRect();
+          if (rect.height > 0) {
+            btn.click();
+            return true;
+          }
+        }
+        return false;
+      });
 
       if (!clicked) {
-        // No more "Load More" buttons found
+        this.logger.debug("  No more Load More buttons found");
         break;
       }
+
+      loadMoreClicks++;
+      this.logger.debug(`  Clicked Load More (${loadMoreClicks})`);
+      await this.sleep(1500);
+
+      // Count current addresses to detect when all content is loaded
+      const count = await page.evaluate(() => {
+        const addresses = document.body.innerText.match(/\d+\s+[\w\s]+,\s+[\w\s]+,\s*[A-Z]{2}\s*\d{5}/g) || [];
+        return addresses.length;
+      });
+
+      if (count === previousCount) {
+        this.logger.debug("  No new content loaded, stopping");
+        break;
+      }
+      previousCount = count;
     }
   }
 
   /**
-   * Extract establishments from Elfsight widget
+   * Extract establishments from Elfsight widget using text parsing
+   * The Elfsight store locator widget renders content as text in a specific pattern:
+   * Name, Status, Hours, Address, Phone, Website
    */
   private async extractFromElfsightWidget(
     page: Page,
@@ -199,80 +200,108 @@ export class HFSAAScraperSource extends BrowserScraperSource {
     return page.evaluate(
       (chapterData) => {
         const results: ScrapedEstablishment[] = [];
+        const text = document.body.innerText;
+        const lines = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
 
-        // Try multiple selector patterns for Elfsight widgets
-        const cardSelectors = [
-          '[class*="eapps-google-maps-store"]',
-          '[class*="store-item"]',
-          '[class*="listing-item"]',
-          '[class*="business-card"]',
-          '[class*="location-card"]',
-          '.card',
-          'article',
-        ];
+        // Find the start of listings (after "X locations")
+        const locationsIdx = lines.findIndex((l: string) => /^\d+\s+locations$/.test(l));
+        if (locationsIdx === -1) return results;
 
-        let cards: Element[] = [];
-        for (const selector of cardSelectors) {
-          const found = document.querySelectorAll(selector);
-          if (found.length > 0) {
-            cards = Array.from(found);
+        const listingLines = lines.slice(locationsIdx + 1);
+
+        let i = 0;
+        while (i < listingLines.length) {
+          const line = listingLines[i];
+
+          // Skip footer/navigation
+          if (line.includes('Load More') ||
+            line.includes('© ') ||
+            line.includes('Stadia Maps') ||
+            line.includes('OpenMapTiles') ||
+            line.includes('info@hfsaa') ||
+            line.includes('Apply for Certification')) {
             break;
           }
-        }
 
-        for (const card of cards) {
-          // Try to extract name
-          const nameEl = card.querySelector(
-            '[class*="title"], [class*="name"], h2, h3, h4, strong'
-          );
-          const name = nameEl?.textContent?.trim();
+          // Check if this looks like a business name (not an address, phone, or website)
+          const isAddress = /^\d+\s+\w+/.test(line) && line.includes(',');
+          const isPhone = /^\+?\d[\d\s\-()]+$/.test(line);
+          const isWebsite = /\.(com|us|org|net|site|co|online)$/i.test(line);
+          const isStatus = line === 'Closed' || line === 'Open' || line.startsWith('Opens ') || line.startsWith('Closes ');
 
-          if (!name || name.length < 2) continue;
+          if (!isAddress && !isPhone && !isWebsite && !isStatus && line.length > 2) {
+            // This is likely a business name
+            const business: {
+              name: string;
+              status?: string;
+              hours?: string;
+              address?: string;
+              city?: string;
+              state?: string;
+              zip?: string;
+              phone?: string;
+              website?: string;
+            } = { name: line };
 
-          // Try to extract address
-          const addressEl = card.querySelector(
-            '[class*="address"], [class*="location"], p'
-          );
-          const address = addressEl?.textContent?.trim() || "";
+            // Look ahead for status, hours, address, phone, website
+            let j = i + 1;
+            while (j < listingLines.length && j < i + 8) {
+              const nextLine = listingLines[j];
 
-          // Try to extract phone
-          const phoneEl = card.querySelector(
-            '[class*="phone"], a[href^="tel:"]'
-          );
-          let phone = phoneEl?.textContent?.trim();
-          if (!phone && phoneEl) {
-            const href = phoneEl.getAttribute("href");
-            if (href?.startsWith("tel:")) {
-              phone = href.replace("tel:", "");
+              const isNextAddress = /^\d+\s+\w+/.test(nextLine) && nextLine.includes(',');
+              const isNextPhone = /^\+?\d[\d\s\-()]+$/.test(nextLine);
+              const isNextWebsite = /\.(com|us|org|net|site|co|online)$/i.test(nextLine);
+              const isNextStatus = nextLine === 'Closed' || nextLine === 'Open';
+
+              if (isNextStatus) {
+                business.status = nextLine;
+              } else if (nextLine.match(/Opens .* at/)) {
+                business.hours = nextLine;
+              } else if (isNextAddress) {
+                // Parse address: "123 Street, City, ST ZIP, USA"
+                const addressMatch = nextLine.match(/^(.+),\s*([\w\s]+),\s*([A-Z]{2})\s*(\d{5})(?:,\s*USA)?$/);
+                if (addressMatch) {
+                  business.address = addressMatch[1].trim();
+                  business.city = addressMatch[2].trim();
+                  business.state = addressMatch[3];
+                  business.zip = addressMatch[4];
+                } else {
+                  business.address = nextLine;
+                }
+              } else if (isNextPhone) {
+                business.phone = nextLine;
+              } else if (isNextWebsite) {
+                business.website = nextLine;
+              } else if (!isNextStatus && nextLine.length > 2) {
+                // Unknown line, might be next business
+                break;
+              }
+
+              j++;
             }
+
+            // Only add if we have an address
+            if (business.address) {
+              results.push({
+                name: business.name,
+                address: business.address,
+                city: business.city || chapterData.defaultCity || "",
+                state: business.state || chapterData.state,
+                postalCode: business.zip,
+                country: "USA",
+                phone: business.phone,
+                website: business.website,
+                category: "restaurant",
+                region: chapterData.region,
+                certificationBody: "HFSAA",
+                sourceUrl: chapterData.url,
+              });
+            }
+
+            i = j;
+          } else {
+            i++;
           }
-
-          // Try to extract website
-          const websiteEl = card.querySelector(
-            'a[href^="http"]:not([href*="tel:"]):not([href*="mailto:"])'
-          );
-          const website = (websiteEl as HTMLAnchorElement)?.href;
-
-          // Try to extract description
-          const descEl = card.querySelector(
-            '[class*="description"], [class*="bio"], p:not([class*="address"])'
-          );
-          const description = descEl?.textContent?.trim();
-
-          results.push({
-            name,
-            address: address || "Address not provided",
-            city: chapterData.defaultCity || "",
-            state: chapterData.state,
-            country: "USA",
-            phone: phone || undefined,
-            website: website || undefined,
-            description: description || undefined,
-            category: "restaurant", // Default, will be mapped
-            region: chapterData.region,
-            certificationBody: "HFSAA",
-            sourceUrl: chapterData.url,
-          });
         }
 
         return results;
@@ -283,91 +312,14 @@ export class HFSAAScraperSource extends BrowserScraperSource {
 
   /**
    * Extract from a generic page without Elfsight widget
+   * Falls back to same text parsing approach
    */
   private async extractFromGenericPage(
     page: Page,
     chapter: RegionalChapter
   ): Promise<ScrapedEstablishment[]> {
-    return page.evaluate(
-      (chapterData) => {
-        const results: ScrapedEstablishment[] = [];
-        const pageText = document.body.innerText;
-
-        // Try to find business listings in the page text
-        // Look for patterns like "Business Name\nAddress\nPhone"
-        const lines = pageText.split("\n").map((l) => l.trim()).filter(Boolean);
-
-        let currentBusiness: Partial<ScrapedEstablishment> | null = null;
-
-        for (const line of lines) {
-          // Skip navigation/menu items
-          if (
-            line.length < 3 ||
-            line.includes("Menu") ||
-            line.includes("Contact") ||
-            line.includes("About")
-          ) {
-            continue;
-          }
-
-          // Check if this looks like an address
-          const addressPattern = /^\d+\s+\w+.*(?:St|Ave|Rd|Blvd|Dr|Way|Ln|Ct)/i;
-          const cityStatePattern = /^[\w\s]+,\s*[A-Z]{2}\s*\d{5}/i;
-
-          if (addressPattern.test(line)) {
-            if (currentBusiness?.name) {
-              currentBusiness.address = line;
-            }
-          } else if (cityStatePattern.test(line)) {
-            if (currentBusiness?.name) {
-              // Parse city, state, zip from line
-              const match = line.match(/^(.+?),\s*([A-Z]{2})\s*(\d{5})?/);
-              if (match) {
-                currentBusiness.city = match[1].trim();
-                currentBusiness.state = match[2];
-                if (match[3]) {
-                  currentBusiness.postalCode = match[3];
-                }
-              }
-
-              // Save and reset
-              if (currentBusiness.name && currentBusiness.address) {
-                results.push({
-                  name: currentBusiness.name,
-                  address: currentBusiness.address,
-                  city: currentBusiness.city || chapterData.defaultCity || "",
-                  state: currentBusiness.state || chapterData.state,
-                  postalCode: currentBusiness.postalCode,
-                  country: "USA",
-                  phone: currentBusiness.phone,
-                  website: currentBusiness.website,
-                  category: "restaurant",
-                  region: chapterData.region,
-                  certificationBody: "HFSAA",
-                  sourceUrl: chapterData.url,
-                });
-              }
-
-              currentBusiness = null;
-            }
-          } else if (line.match(/^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/)) {
-            // Phone number
-            if (currentBusiness) {
-              currentBusiness.phone = line;
-            }
-          } else if (line.length > 3 && line.length < 100 && !line.includes("@")) {
-            // Might be a business name
-            currentBusiness = {
-              name: line,
-              state: chapterData.state,
-            };
-          }
-        }
-
-        return results;
-      },
-      chapter
-    );
+    // Use the same extraction logic as Elfsight
+    return this.extractFromElfsightWidget(page, chapter);
   }
 }
 

@@ -117,6 +117,7 @@ export class HMSScraperSource extends BrowserScraperSource {
 
   /**
    * Extract from structured HTML elements
+   * HMS uses MagicListing record-list cards with structured content
    */
   private async extractFromStructuredPage(
     page: Page,
@@ -126,90 +127,105 @@ export class HMSScraperSource extends BrowserScraperSource {
       (chapterData) => {
         const results: ScrapedEstablishment[] = [];
 
-        // Try multiple selector patterns
-        const cardSelectors = [
-          ".certified-business",
-          ".business-card",
-          ".listing-item",
-          ".establishment",
-          ".card",
-          "[class*='listing']",
-          "[class*='business']",
-          "table tbody tr",
-        ];
+        // HMS uses MagicListing record-list cards
+        const cards = document.querySelectorAll('.MagicListing.record-list');
 
-        for (const selector of cardSelectors) {
-          const items = document.querySelectorAll(selector);
-          if (items.length > 5) {
-            // Found enough items
-            items.forEach((item) => {
-              // Try to find name element
-              const nameEl = item.querySelector(
-                "h2, h3, h4, .name, .title, .business-name, td:first-child, strong"
-              );
-              // Try to find address element
-              const addressEl = item.querySelector(
-                ".address, .location, p, td:nth-child(2), [class*='address']"
-              );
-              // Try to find phone
-              const phoneEl = item.querySelector(
-                ".phone, a[href^='tel'], td:nth-child(3), [class*='phone']"
-              );
-              // Try to find website
-              const websiteEl = item.querySelector(
-                "a[href^='http']:not([href*='tel']):not([href*='mailto'])"
-              );
-
-              const name = nameEl?.textContent?.trim() || "";
-              const address = addressEl?.textContent?.trim() || "";
-
-              // Skip header rows and empty items
-              if (
-                name &&
-                name.length > 2 &&
-                !name.toLowerCase().includes("name") &&
-                !name.toLowerCase().includes("establishment") &&
-                !name.toLowerCase().includes("business")
-              ) {
-                // Parse address for city/state
-                let city = "";
-                let state = chapterData.state;
-                let postalCode = "";
-
-                // Try to extract state from address
-                const stateMatch = address.match(/([A-Z]{2})\s*(\d{5})?/);
-                if (stateMatch) {
-                  state = stateMatch[1];
-                  if (stateMatch[2]) {
-                    postalCode = stateMatch[2];
-                  }
-                }
-
-                // Try to extract city
-                const cityMatch = address.match(/,\s*([^,]+),\s*[A-Z]{2}/);
-                if (cityMatch) {
-                  city = cityMatch[1].trim();
-                }
-
-                results.push({
-                  name,
-                  address: address || "Address not provided",
-                  city: city || chapterData.defaultCity || "Unknown",
-                  state,
-                  postalCode: postalCode || undefined,
-                  country: "USA",
-                  phone: phoneEl?.textContent?.trim() || undefined,
-                  website: (websiteEl as HTMLAnchorElement)?.href || undefined,
-                  category: "restaurant",
-                  region: chapterData.region,
-                  certificationBody: "HMS",
-                  sourceUrl: chapterData.url,
-                });
-              }
-            });
-            break; // Found matches, stop trying other selectors
-          }
+        if (cards.length === 0) {
+          return results;
         }
+
+        cards.forEach((card) => {
+          const text = (card as HTMLElement).innerText || '';
+          const lines = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+
+          // Skip if not enough lines
+          if (lines.length < 3) return;
+
+          // First line is category (RESTAURANTS, RETAIL STORE, etc.)
+          const category = lines[0];
+
+          // Second line is business name
+          const name = lines[1];
+
+          // Third line is full address (e.g., "2525 W Devon Ave, Chicago, IL 60659")
+          const fullAddress = lines[2];
+
+          // Parse address components
+          // Format: "Street Address, City, ST ZIP"
+          const addressMatch = fullAddress.match(/^(.+),\s*(.+),\s*([A-Z]{2})\s*(\d{5})$/);
+
+          let street = fullAddress;
+          let city = '';
+          let state = chapterData.state;
+          let postalCode = '';
+
+          if (addressMatch) {
+            street = addressMatch[1].trim();
+            city = addressMatch[2].trim();
+            state = addressMatch[3];
+            postalCode = addressMatch[4];
+          } else {
+            // Try alternate parsing - look for City/State labels
+            const cityIdx = lines.findIndex((l: string) => l === 'City');
+            if (cityIdx !== -1 && cityIdx + 1 < lines.length) {
+              city = lines[cityIdx + 1];
+            }
+            const stateIdx = lines.findIndex((l: string) => l === 'State');
+            if (stateIdx !== -1 && stateIdx + 1 < lines.length) {
+              // Convert state name to abbreviation
+              const stateMap: Record<string, string> = {
+                'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+                'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+                'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+                'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+                'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+                'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+                'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+                'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+                'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+                'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+                'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+                'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+                'Wisconsin': 'WI', 'Wyoming': 'WY',
+              };
+              const stateName = lines[stateIdx + 1];
+              state = stateMap[stateName] || stateName.substring(0, 2).toUpperCase();
+            }
+          }
+
+          // Look for Products line
+          const productsLine = lines.find((l: string) => l.startsWith('Products:'));
+          const products = productsLine ? productsLine.replace('Products:', '').trim().split(' ') : undefined;
+
+          // Skip if name is invalid
+          if (!name || name.length < 2 || name === category) return;
+
+          // Map category to our category type
+          const categoryMap: Record<string, string> = {
+            'RESTAURANTS': 'restaurant',
+            'RETAIL STORE': 'grocery',
+            'SLAUGHTER HOUSE': 'butcher',
+            'PROCESSORS': 'food_production',
+            'DISTRIBUTOR': 'other',
+            'CATERERS': 'restaurant',
+            'MISC': 'other',
+            'FURTHER PROCESSOR': 'food_production',
+          };
+
+          results.push({
+            name,
+            address: street,
+            city: city || chapterData.defaultCity || 'Unknown',
+            state,
+            postalCode: postalCode || undefined,
+            country: 'USA',
+            category: categoryMap[category] || 'restaurant',
+            region: chapterData.region,
+            certificationBody: 'HMS',
+            sourceUrl: chapterData.url,
+            products,
+          });
+        });
 
         return results;
       },

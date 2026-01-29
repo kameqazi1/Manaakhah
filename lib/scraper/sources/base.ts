@@ -267,12 +267,15 @@ export abstract class BrowserScraperSource extends BaseScraperSource {
     let filtered = [...this.chapters];
 
     if (config.region) {
-      const regionLower = config.region.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.region.toLowerCase().includes(regionLower) ||
-          regionLower.includes(c.region.toLowerCase())
-      );
+      // Normalize region: remove spaces, hyphens, convert to lowercase
+      const regionNorm = config.region.toLowerCase().replace(/[\s\-_]/g, "");
+      filtered = filtered.filter((c) => {
+        const chapterNorm = c.region.toLowerCase().replace(/[\s\-_]/g, "");
+        return (
+          chapterNorm.includes(regionNorm) ||
+          regionNorm.includes(chapterNorm)
+        );
+      });
     }
 
     if (config.state) {

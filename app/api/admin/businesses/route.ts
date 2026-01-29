@@ -8,7 +8,21 @@ export const dynamic = "force-dynamic";
 // GET /api/admin/businesses - Get all businesses with filtering
 export async function GET(req: Request) {
   try {
-    if (!(await isAdmin(req))) {
+    // Check admin auth with fallback
+    let authorized = false;
+    try {
+      authorized = await isAdmin(req);
+    } catch (authError) {
+      console.error("Auth check failed:", authError);
+      // If auth fails, return empty data rather than crashing
+      return NextResponse.json({
+        businesses: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        warning: "Authentication check failed - showing empty results",
+      });
+    }
+
+    if (!authorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -28,33 +42,45 @@ export async function GET(req: Request) {
       where.category = category;
     }
 
-    // Get all businesses
-    let businesses = await db.business.findMany({
-      where,
-      include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    // Get all businesses with error handling
+    let businesses: any[] = [];
+    try {
+      businesses = await db.business.findMany({
+        where,
+        include: {
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          reviews: {
+            select: {
+              id: true,
+              rating: true,
+            },
           },
         },
-        reviews: {
-          select: {
-            id: true,
-            rating: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (dbError) {
+      console.error("Database query failed:", dbError);
+      // Return empty results with warning rather than crashing
+      return NextResponse.json({
+        businesses: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        warning: "Database query failed - check DATABASE_URL configuration",
+        details: dbError instanceof Error ? dbError.message : String(dbError),
+      });
+    }
 
     // Apply search filter if provided
     if (search) {
       const searchLower = search.toLowerCase();
       businesses = businesses.filter(
         (b: any) =>
-          b.name.toLowerCase().includes(searchLower) ||
+          b.name?.toLowerCase().includes(searchLower) ||
           b.address?.toLowerCase().includes(searchLower) ||
           b.city?.toLowerCase().includes(searchLower)
       );
@@ -65,13 +91,13 @@ export async function GET(req: Request) {
     const offset = (page - 1) * limit;
     const paginatedBusinesses = businesses.slice(offset, offset + limit);
 
-    // Add computed fields
+    // Add computed fields with null safety
     const businessesWithStats = paginatedBusinesses.map((b: any) => ({
       ...b,
-      reviewCount: b.reviews?.length || 0,
+      reviewCount: b.reviews?.length ?? 0,
       averageRating:
         b.reviews?.length > 0
-          ? b.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
+          ? b.reviews.reduce((sum: number, r: any) => sum + (r.rating ?? 0), 0) /
             b.reviews.length
           : 0,
     }));
@@ -87,14 +113,12 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error("Error fetching businesses:", error);
-    // Return more detailed error info for debugging
-    return NextResponse.json(
-      {
-        error: "Failed to fetch businesses",
-        details: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      },
-      { status: 500 }
-    );
+    // Return empty results rather than 500 error
+    return NextResponse.json({
+      businesses: [],
+      pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      error: "Failed to fetch businesses",
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 }

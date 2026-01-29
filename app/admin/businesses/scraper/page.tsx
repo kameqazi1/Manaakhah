@@ -245,21 +245,25 @@ const FILTER_PRESETS: FilterPreset[] = [
   },
 ];
 
-// All available sources
-const ALL_SOURCES: { id: DataSource; name: string; description: string }[] = [
-  { id: "google_places", name: "Google Places", description: "Google Maps business listings" },
-  { id: "yelp", name: "Yelp", description: "Yelp business reviews" },
-  { id: "zabihah", name: "Zabihah", description: "Halal restaurant directory" },
-  { id: "halaltrip", name: "HalalTrip", description: "Halal travel & dining" },
-  { id: "muslimpro", name: "Muslim Pro", description: "Halal finder app" },
-  { id: "yellowpages", name: "Yellow Pages", description: "Business directory" },
-  { id: "bbb", name: "BBB", description: "Better Business Bureau" },
-  // Halal certification directories
-  { id: "hfsaa", name: "HFSAA", description: "Halal Food Standards Alliance (certified)" },
-  { id: "hms", name: "HMS", description: "Halal Monitoring Services (CLI only)" },
-  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (coming soon)" },
-  { id: "ifanca", name: "IFANCA", description: "IFANCA Certification (coming soon)" },
+// All available sources with implementation status
+const ALL_SOURCES: { id: DataSource; name: string; description: string; implemented: boolean }[] = [
+  // IMPLEMENTED - Halal certification directories
+  { id: "hfsaa", name: "HFSAA", description: "Halal Food Standards Alliance of America - certified listings", implemented: true },
+  { id: "hms", name: "HMS", description: "Halal Monitoring Services USA - certified listings", implemented: true },
+  // NOT YET IMPLEMENTED
+  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (coming soon)", implemented: false },
+  { id: "ifanca", name: "IFANCA", description: "IFANCA Certification (coming soon)", implemented: false },
+  { id: "zabihah", name: "Zabihah", description: "Halal restaurant directory (coming soon)", implemented: false },
+  { id: "halaltrip", name: "HalalTrip", description: "Halal travel & dining (coming soon)", implemented: false },
+  { id: "muslimpro", name: "Muslim Pro", description: "Halal finder app (coming soon)", implemented: false },
+  { id: "google_places", name: "Google Places", description: "Google Maps (coming soon)", implemented: false },
+  { id: "yelp", name: "Yelp", description: "Yelp reviews (coming soon)", implemented: false },
+  { id: "yellowpages", name: "Yellow Pages", description: "Business directory (coming soon)", implemented: false },
+  { id: "bbb", name: "BBB", description: "Better Business Bureau (coming soon)", implemented: false },
 ];
+
+// Get only implemented sources
+const IMPLEMENTED_SOURCES = ALL_SOURCES.filter(s => s.implemented).map(s => s.id);
 
 // All categories
 const ALL_CATEGORIES: { id: BusinessCategory; name: string; group: string }[] = [
@@ -350,7 +354,7 @@ export default function EnhancedScraperPage() {
     radius: "10",
     categories: [],
     tags: [],
-    sources: ["google_places", "yelp", "zabihah"],
+    sources: ["hfsaa", "hms"], // Default to implemented sources
     minConfidence: "50",
     maxResultsPerSource: "20",
     verificationLevel: [],
@@ -736,10 +740,17 @@ export default function EnhancedScraperPage() {
                   {/* Sources Tab */}
                   {activeTab === "sources" && (
                     <div className="space-y-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>Note:</strong> Currently implemented sources (HFSAA, HMS) scrape
+                          halal-certified businesses from certification directories. They fetch all
+                          certified listings and filter by state if specified.
+                        </p>
+                      </div>
                       <div>
                         <Label className="text-base font-semibold">Data Sources</Label>
                         <p className="text-xs text-gray-500 mb-3">
-                          Select which sources to scrape from
+                          Select which sources to scrape from (only "Ready" sources are active)
                         </p>
                         <div className="grid gap-2">
                           {ALL_SOURCES.map((source) => (
@@ -756,16 +767,23 @@ export default function EnhancedScraperPage() {
                                 checked={formData.sources.includes(source.id)}
                                 onChange={() => toggleSource(source.id)}
                                 className="rounded"
+                                disabled={!source.implemented}
                               />
                               <div className="flex-1">
-                                <span className="font-medium">{source.name}</span>
+                                <span className={`font-medium ${!source.implemented ? "text-gray-400" : ""}`}>
+                                  {source.name}
+                                </span>
                                 <p className="text-xs text-gray-500">{source.description}</p>
                               </div>
-                              {source.id === "zabihah" || source.id === "halaltrip" || source.id === "muslimpro" ? (
+                              {source.implemented ? (
                                 <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
-                                  Halal-focused
+                                  Ready
                                 </span>
-                              ) : null}
+                              ) : (
+                                <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                                  Coming soon
+                                </span>
+                              )}
                             </label>
                           ))}
                         </div>

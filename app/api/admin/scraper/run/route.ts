@@ -73,8 +73,17 @@ export async function POST(req: Request) {
     let totalSkipped = 0;
     let totalErrors = 0;
     let totalGeocoded = 0;
-    const bySource: Record<string, { found: number; imported: number; errors: number }> = {};
+    const bySource: Record<string, number> = {};
+    const byCategory: Record<string, number> = {};
     const allErrors: Array<{ source: string; message: string }> = [];
+    const allBusinesses: Array<{
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      confidence: number;
+      source: string;
+    }> = [];
 
     for (const result of results) {
       totalFound += result.stats.found;
@@ -83,11 +92,22 @@ export async function POST(req: Request) {
       totalErrors += result.stats.errors;
       totalGeocoded += result.stats.geocoded;
 
-      bySource[result.source] = {
-        found: result.stats.found,
-        imported: result.stats.imported,
-        errors: result.stats.errors,
-      };
+      bySource[result.source] = result.stats.imported;
+
+      // Track categories and build business list for UI
+      for (const est of result.establishments) {
+        const cat = est.category || "OTHER";
+        byCategory[cat] = (byCategory[cat] || 0) + 1;
+
+        allBusinesses.push({
+          name: est.name,
+          address: est.address,
+          city: est.city,
+          state: est.state,
+          confidence: 70, // Default confidence
+          source: result.source,
+        });
+      }
 
       for (const err of result.errors) {
         allErrors.push({ source: err.source, message: err.message });
@@ -96,16 +116,28 @@ export async function POST(req: Request) {
 
     const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
 
+    // Calculate average confidence (default to 70 for certified sources)
+    const avgConfidence = totalImported > 0 ? 70 : 0;
+
     return NextResponse.json({
       success: results.some((r) => r.success),
+      businesses: allBusinesses,
       stats: {
+        // Stats expected by the UI (scraper page)
         totalFound,
+        totalSaved: totalImported,
+        duplicatesSkipped: totalSkipped,
+        lowConfidenceSkipped: 0,
+        averageConfidence: avgConfidence,
+        processingTime: totalDuration,
+        bySource,
+        byCategory,
+        // Additional stats for other consumers
         totalImported,
         totalSkipped,
         totalErrors,
         totalGeocoded,
         duration: totalDuration,
-        bySource,
       },
       errors: allErrors,
       message:

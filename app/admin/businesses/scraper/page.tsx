@@ -127,13 +127,16 @@ interface ScrapeResult {
   errors: { source: string; message: string }[];
   stats: {
     totalFound: number;
-    totalSaved: number;
-    duplicatesSkipped: number;
-    lowConfidenceSkipped: number;
-    averageConfidence: number;
-    processingTime: number;
+    totalSaved?: number;
+    totalImported?: number;
+    duplicatesSkipped?: number;
+    totalSkipped?: number;
+    lowConfidenceSkipped?: number;
+    averageConfidence?: number;
+    processingTime?: number;
+    duration?: number;
     bySource: Record<string, number>;
-    byCategory: Record<string, number>;
+    byCategory?: Record<string, number>;
   };
 }
 
@@ -1020,25 +1023,25 @@ export default function EnhancedScraperPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-green-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-green-700">
-                        {results.stats.totalSaved}
+                        {results.stats.totalSaved ?? results.stats.totalImported ?? 0}
                       </div>
                       <div className="text-sm text-green-600">Businesses Found</div>
                     </div>
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-blue-700">
-                        {results.stats.averageConfidence.toFixed(0)}%
+                        {(results.stats.averageConfidence ?? 0).toFixed(0)}%
                       </div>
                       <div className="text-sm text-blue-600">Avg Confidence</div>
                     </div>
                     <div className="bg-yellow-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-yellow-700">
-                        {results.stats.duplicatesSkipped}
+                        {results.stats.duplicatesSkipped ?? results.stats.totalSkipped ?? 0}
                       </div>
                       <div className="text-sm text-yellow-600">Duplicates Skipped</div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <div className="text-2xl font-bold text-gray-700">
-                        {(results.stats.processingTime / 1000).toFixed(1)}s
+                        {((results.stats.processingTime ?? results.stats.duration ?? 0) / 1000).toFixed(1)}s
                       </div>
                       <div className="text-sm text-gray-600">Processing Time</div>
                     </div>

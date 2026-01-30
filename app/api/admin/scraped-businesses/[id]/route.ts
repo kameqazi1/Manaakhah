@@ -94,7 +94,7 @@ export async function PUT(
 
     if (!parseResult.success) {
       return NextResponse.json(
-        { error: parseResult.error.errors[0].message },
+        { error: parseResult.error.issues[0].message },
         { status: 400 }
       );
     }
@@ -373,7 +373,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error: "Validation failed",
-          details: parseResult.error.errors.map(e => ({
+          details: parseResult.error.issues.map(e => ({
             field: e.path.join("."),
             message: e.message,
           })),

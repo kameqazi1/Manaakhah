@@ -4,6 +4,13 @@ import { checkAdminAuth } from "@/lib/admin-auth";
 import { BusinessTag, BusinessCategory, ScrapedBusinessClaimStatus, Prisma } from "@prisma/client";
 import { z } from "zod";
 
+// Valid price range values for type-safe validation
+const VALID_PRICE_RANGES = ["BUDGET", "MODERATE", "PREMIUM", "LUXURY"] as const;
+type PriceRange = typeof VALID_PRICE_RANGES[number];
+
+// Pre-compute Set for O(1) tag validation
+const VALID_TAGS_SET = new Set(Object.values(BusinessTag));
+
 // Zod schema for PUT request body
 const UpdateStatusSchema = z.object({
   claimStatus: z.enum(["APPROVED", "REJECTED", "PENDING_REVIEW", "CLAIMED"] as const, {
@@ -89,7 +96,12 @@ export async function PUT(
     }
 
     // Parse and validate request body with Zod
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
     const parseResult = UpdateStatusSchema.safeParse(body);
 
     if (!parseResult.success) {
@@ -109,6 +121,15 @@ export async function PUT(
 
     // For non-APPROVED statuses, just update the scraped business
     if (claimStatus !== "APPROVED") {
+      // Verify business exists before updating
+      const exists = await db.scrapedBusiness.findUnique({
+        where: { id: businessId },
+        select: { id: true },
+      });
+      if (!exists) {
+        return NextResponse.json({ error: "Scraped business not found" }, { status: 404 });
+      }
+
       const updatedBusiness = await db.scrapedBusiness.update({
         where: { id: businessId },
         data: {
@@ -176,8 +197,9 @@ export async function PUT(
     const websiteUrl = scraped.website || scraped.sourceUrl || null;
 
     // Handle missing coordinates - use null instead of hardcoded coordinates
-    const latitude = scraped.latitude || null;
-    const longitude = scraped.longitude || null;
+    // Use ?? (nullish coalescing) not || to preserve valid 0 values (equator/prime meridian)
+    const latitude = scraped.latitude ?? null;
+    const longitude = scraped.longitude ?? null;
 
     // CRITICAL: Wrap EVERYTHING in a transaction - including duplicate check
     // This prevents race conditions where two concurrent approvals both pass the check
@@ -225,7 +247,10 @@ export async function PUT(
 
             // Transfer additional metadata
             hours: metadata.hours || null,
-            priceRange: metadata.priceRange as "BUDGET" | "MODERATE" | "PREMIUM" | "LUXURY" | null,
+            // Validate priceRange against allowed values instead of unsafe type assertion
+            priceRange: metadata.priceRange && VALID_PRICE_RANGES.includes(metadata.priceRange)
+              ? (metadata.priceRange as PriceRange)
+              : null,
             serviceList: metadata.serviceList || [],
 
             ownerId,
@@ -270,8 +295,9 @@ export async function PUT(
 
         // Step 4: Transfer tags if available
         if (metadata.tags && metadata.tags.length > 0) {
-          const validTags = metadata.tags.filter((tag) =>
-            Object.values(BusinessTag).includes(tag as BusinessTag)
+          // Use pre-computed Set for O(1) validation instead of O(n) array search
+          const validTags = metadata.tags.filter((tag: string) =>
+            VALID_TAGS_SET.has(tag as BusinessTag)
           );
 
           if (validTags.length > 0) {
@@ -362,7 +388,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
+
     const resolvedParams = await params;
     const businessId = resolvedParams.id;
 

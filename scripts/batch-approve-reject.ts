@@ -104,9 +104,9 @@ async function batchUpdate() {
       // Create business using raw SQL to avoid schema mismatch
       const websiteVal = scraped.website || scraped.sourceUrl || null;
       const descVal = scraped.description || `${scraped.name} in ${scraped.city}`;
-      // Use null for missing coordinates instead of default Fremont values
-      const latVal = scraped.latitude || null;
-      const lngVal = scraped.longitude || null;
+      // Use ?? (nullish coalescing) to preserve valid 0 values (equator/prime meridian)
+      const latVal = scraped.latitude ?? null;
+      const lngVal = scraped.longitude ?? null;
       const phoneVal = scraped.phone || "";
       const confScore = metadata.confidence || null;
 

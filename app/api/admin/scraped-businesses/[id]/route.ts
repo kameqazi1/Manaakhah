@@ -50,6 +50,8 @@ const EditBusinessSchema = z.object({
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
+// Ensure Node.js runtime for crypto.randomUUID() compatibility
+export const runtime = "nodejs";
 
 // GET /api/admin/scraped-businesses/:id - Get single scraped business
 export async function GET(
@@ -246,11 +248,12 @@ export async function PUT(
             website: websiteUrl,
 
             // Transfer additional metadata
-            hours: metadata.hours || null,
-            // Validate priceRange against allowed values instead of unsafe type assertion
-            priceRange: metadata.priceRange && VALID_PRICE_RANGES.includes(metadata.priceRange)
+            // For Json? fields, use undefined (not null) to leave as database NULL
+            ...(metadata.hours && { hours: metadata.hours }),
+            // Validate priceRange against allowed values with proper type cast
+            priceRange: metadata.priceRange && VALID_PRICE_RANGES.includes(metadata.priceRange as PriceRange)
               ? (metadata.priceRange as PriceRange)
-              : null,
+              : undefined,
             serviceList: metadata.serviceList || [],
 
             ownerId,
@@ -423,6 +426,15 @@ export async function PATCH(
       );
     }
 
+    // Verify business exists before updating (return 404 instead of 500)
+    const exists = await db.scrapedBusiness.findUnique({
+      where: { id: businessId },
+      select: { id: true },
+    });
+    if (!exists) {
+      return NextResponse.json({ error: "Scraped business not found" }, { status: 404 });
+    }
+
     const updatedBusiness = await db.scrapedBusiness.update({
       where: { id: businessId },
       data: updateData,
@@ -454,6 +466,15 @@ export async function DELETE(
 
     const resolvedParams = await params;
     const businessId = resolvedParams.id;
+
+    // Verify business exists before deleting (return 404 instead of 500)
+    const exists = await db.scrapedBusiness.findUnique({
+      where: { id: businessId },
+      select: { id: true },
+    });
+    if (!exists) {
+      return NextResponse.json({ error: "Scraped business not found" }, { status: 404 });
+    }
 
     await db.scrapedBusiness.delete({
       where: { id: businessId },

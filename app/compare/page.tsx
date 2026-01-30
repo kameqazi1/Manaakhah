@@ -74,37 +74,36 @@ export default function ComparePage() {
   const fetchBusinesses = async () => {
     setLoading(true);
     try {
-      // In mock mode, generate mock data for the IDs
-      const mockBusinesses: Business[] = compareIds.map((id, index) => ({
-        id,
-        name: [`Al-Noor Restaurant`, `Bismillah Market`, `Medina Cafe`, `Salam Grocers`][index % 4],
-        category: ["RESTAURANT", "GROCERY", "HALAL_FOOD", "GROCERY"][index % 4],
-        description: "A wonderful Muslim-owned business serving the local community with quality products and services.",
-        address: `${100 + index * 100} Main Street`,
-        city: "Los Angeles",
-        phone: `(555) ${100 + index}-${1000 + index}`,
-        website: `https://example.com/${id}`,
-        averageRating: 4.2 + (index * 0.2),
-        reviewCount: 50 + index * 30,
-        priceRange: ["$", "$$", "$$$"][index % 3],
-        verificationStatus: index % 2 === 0 ? "APPROVED" : "PENDING",
-        tags: [
-          { tag: "HALAL_CERTIFIED" },
-          { tag: index % 2 === 0 ? "SISTERS_FRIENDLY" : "FAMILY_FRIENDLY" },
-        ],
-        services: ["Dine-in", "Takeout", "Delivery"].slice(0, 2 + (index % 2)),
-        hours: {
-          monday: { open: "09:00", close: "21:00" },
-          tuesday: { open: "09:00", close: "21:00" },
-          wednesday: { open: "09:00", close: "21:00" },
-          thursday: { open: "09:00", close: "21:00" },
-          friday: { open: "09:00", close: "22:00" },
-          saturday: { open: "10:00", close: "22:00" },
-          sunday: { open: "10:00", close: "20:00" },
-        },
-      }));
-
-      setBusinesses(mockBusinesses);
+      // Fetch each business by ID from API
+      const fetchedBusinesses: Business[] = [];
+      for (const id of compareIds) {
+        try {
+          const response = await fetch(`/api/businesses/${id}`);
+          if (response.ok) {
+            const data = await response.json();
+            fetchedBusinesses.push({
+              id: data.id,
+              name: data.name,
+              category: data.category,
+              description: data.description || "",
+              address: data.address,
+              city: data.city,
+              phone: data.phone || "",
+              website: data.website,
+              averageRating: data.averageRating || 0,
+              reviewCount: data.reviewCount || 0,
+              priceRange: data.priceRange,
+              verificationStatus: data.verificationStatus,
+              tags: data.tags || [],
+              services: data.services || [],
+              hours: data.hours,
+            });
+          }
+        } catch (err) {
+          console.error(`Error fetching business ${id}:`, err);
+        }
+      }
+      setBusinesses(fetchedBusinesses);
     } catch (error) {
       console.error("Error fetching businesses:", error);
     } finally {

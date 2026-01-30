@@ -109,13 +109,6 @@ function getTimeUntilPrayer(prayerTime: string): string {
   return `${diffHours}h ${diffMinutes}m`;
 }
 
-const mockNearbyMasjids: NearbyMasjid[] = [
-  { id: "m1", name: "Islamic Center of Los Angeles", distance: 1.2, address: "434 S Vermont Ave", nextPrayer: "12:15 PM", hasJummah: true },
-  { id: "m2", name: "King Fahad Mosque", distance: 2.5, address: "10980 Washington Blvd", nextPrayer: "12:30 PM", hasJummah: true },
-  { id: "m3", name: "Omar Ibn Al-Khattab Mosque", distance: 3.8, address: "1025 S Exposition Blvd", nextPrayer: "12:20 PM", hasJummah: true },
-  { id: "m4", name: "Masjid Al-Rasool", distance: 4.2, address: "4016 S Central Ave", nextPrayer: "12:25 PM", hasJummah: false },
-];
-
 export default function PrayerTimesPage() {
   const { data: session } = useMockSession();
   const [location, setLocation] = useState<Location | null>(null);
@@ -123,6 +116,8 @@ export default function PrayerTimesPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [nearbyMasjids, setNearbyMasjids] = useState<NearbyMasjid[]>([]);
+  const [loadingMasjids, setLoadingMasjids] = useState(false);
 
   useEffect(() => {
     getLocation();
@@ -133,8 +128,34 @@ export default function PrayerTimesPage() {
     if (location) {
       const times = calculatePrayerTimes(selectedDate, location);
       setPrayerTimes(times);
+      fetchNearbyMasjids();
     }
   }, [location, selectedDate]);
+
+  const fetchNearbyMasjids = async () => {
+    if (!location) return;
+    setLoadingMasjids(true);
+    try {
+      const response = await fetch(
+        `/api/businesses?lat=${location.lat}&lng=${location.lng}&category=MASJID&limit=5`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        const masjids: NearbyMasjid[] = (data || []).map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          distance: b.distance || 0,
+          address: b.address,
+          hasJummah: b.tags?.some((t: any) => t.tag === "JUMMAH_AVAILABLE") || false,
+        }));
+        setNearbyMasjids(masjids);
+      }
+    } catch (error) {
+      console.error("Error fetching nearby masjids:", error);
+    } finally {
+      setLoadingMasjids(false);
+    }
+  };
 
   const getLocation = () => {
     if (navigator.geolocation) {
@@ -310,38 +331,38 @@ export default function PrayerTimesPage() {
             <CardTitle>Nearby Masjids</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {mockNearbyMasjids.map((masjid) => (
-                <Link
-                  key={masjid.id}
-                  href={`/business/${masjid.id}`}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <p className="font-semibold">{masjid.name}</p>
-                    <p className="text-sm text-gray-500">{masjid.address}</p>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
-                        {masjid.distance} mi
-                      </Badge>
-                      {masjid.hasJummah && (
-                        <Badge variant="secondary" className="text-xs">
-                          Jummah Available
-                        </Badge>
-                      )}
+            {loadingMasjids ? (
+              <div className="text-center py-4 text-gray-500">Loading nearby masjids...</div>
+            ) : nearbyMasjids.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">No masjids found nearby</div>
+            ) : (
+              <div className="space-y-3">
+                {nearbyMasjids.map((masjid) => (
+                  <Link
+                    key={masjid.id}
+                    href={`/business/${masjid.id}`}
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-semibold">{masjid.name}</p>
+                      <p className="text-sm text-gray-500">{masjid.address}</p>
+                      <div className="flex gap-2 mt-1">
+                        {masjid.distance > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {masjid.distance.toFixed(1)} mi
+                          </Badge>
+                        )}
+                        {masjid.hasJummah && (
+                          <Badge variant="secondary" className="text-xs">
+                            Jummah Available
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    {masjid.nextPrayer && (
-                      <>
-                        <p className="text-sm text-gray-500">Next Salah</p>
-                        <p className="font-semibold">{masjid.nextPrayer}</p>
-                      </>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            )}
             <div className="mt-4 pt-4 border-t">
               <Link href="/search?category=MASJID">
                 <Button variant="outline" className="w-full">

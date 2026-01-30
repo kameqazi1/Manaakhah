@@ -47,60 +47,6 @@ const forumCategories: ForumCategory[] = [
   { id: "support", name: "Help & Support", description: "Get help with the platform or ask questions", icon: "🤝", postCount: 0, color: "bg-orange-100" },
 ];
 
-const mockPosts: ForumPost[] = [
-  {
-    id: "1",
-    title: "Best halal restaurants in LA?",
-    content: "I'm new to LA and looking for recommendations for authentic halal restaurants. Any suggestions?",
-    categoryId: "recommendations",
-    authorId: "user1",
-    authorName: "Ahmed M.",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    viewCount: 156,
-    replyCount: 12,
-    likeCount: 8,
-    isPinned: false,
-    tags: ["halal", "restaurants", "LA"],
-    lastReplyAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    lastReplyBy: "Fatima K.",
-  },
-  {
-    id: "2",
-    title: "Tips for starting a Muslim-owned business",
-    content: "I want to share some tips I learned from starting my own halal catering business...",
-    categoryId: "business-tips",
-    authorId: "user2",
-    authorName: "Omar S.",
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    viewCount: 342,
-    replyCount: 28,
-    likeCount: 45,
-    isPinned: true,
-    tags: ["business", "tips", "startup"],
-    lastReplyAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    lastReplyBy: "Yusuf A.",
-  },
-  {
-    id: "3",
-    title: "Community Iftar Planning 2024",
-    content: "Let's organize a community iftar during Ramadan. Looking for volunteers and venue suggestions.",
-    categoryId: "events",
-    authorId: "user3",
-    authorName: "Aisha R.",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    viewCount: 521,
-    replyCount: 45,
-    likeCount: 78,
-    isPinned: true,
-    tags: ["iftar", "ramadan", "community"],
-    lastReplyAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    lastReplyBy: "Maryam T.",
-  },
-];
-
 export default function ForumPage() {
   const { data: session } = useMockSession();
   const [posts, setPosts] = useState<ForumPost[]>([]);
@@ -124,12 +70,11 @@ export default function ForumPage() {
       if (stored) {
         setPosts(JSON.parse(stored));
       } else {
-        setPosts(mockPosts);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(mockPosts));
+        setPosts([]);
       }
     } catch (error) {
       console.error("Error loading forum posts:", error);
-      setPosts(mockPosts);
+      setPosts([]);
     }
   };
 

@@ -2,8 +2,6 @@
 
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { mockLogin } from "@/lib/mock-auth";
-import { useMockSession } from "@/components/mock-session-provider";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,12 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, CheckCircle, Mail, Loader2 } from "lucide-react";
 
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
-
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { update } = useMockSession();
 
   // Check for success query params
   const verified = searchParams.get("verified") === "true";
@@ -39,48 +34,26 @@ function LoginContent() {
     setError("");
 
     try {
-      if (USE_MOCK_DATA) {
-        // Mock mode: direct login
-        const result = mockLogin(formData.email, formData.password);
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
 
-        if ('error' in result) {
-          if (result.error === 'EMAIL_NOT_FOUND') {
-            setError("No account found with this email address");
-          } else if (result.error === 'WRONG_PASSWORD') {
-            setError("Incorrect password. Please try again.");
-          }
-          setLoading(false);
-          return;
+      if (!result?.ok || result?.error) {
+        if (result?.error === "CredentialsSignin") {
+          setError("Invalid email or password");
+        } else if (result?.error === "EMAIL_NOT_VERIFIED") {
+          setError("Please verify your email before signing in. Check your inbox for the verification link.");
+        } else {
+          setError(result?.error || "An error occurred. Please try again.");
         }
-
-        // Update session
-        update();
-
-        // Redirect to dashboard
-        router.push("/dashboard");
-      } else {
-        // Real mode: Use NextAuth signIn
-        const result = await signIn("credentials", {
-          email: formData.email,
-          password: formData.password,
-          redirect: false,
-        });
-
-        if (!result?.ok || result?.error) {
-          if (result?.error === "CredentialsSignin") {
-            setError("Invalid email or password");
-          } else if (result?.error === "EMAIL_NOT_VERIFIED") {
-            setError("Please verify your email before signing in. Check your inbox for the verification link.");
-          } else {
-            setError(result?.error || "An error occurred. Please try again.");
-          }
-          setLoading(false);
-          return;
-        }
-
-        // Success - redirect to dashboard
-        window.location.href = "/dashboard";
+        setLoading(false);
+        return;
       }
+
+      // Success - redirect to dashboard
+      window.location.href = "/dashboard";
     } catch (err) {
       setError("An error occurred. Please try again.");
     } finally {
@@ -186,51 +159,6 @@ function LoginContent() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>
-
-            {USE_MOCK_DATA && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <p className="text-xs font-semibold text-blue-900 mb-2">Demo Accounts:</p>
-                <div className="space-y-2 text-xs text-blue-800">
-                  <div className="flex items-center justify-between">
-                    <span>Consumer:</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 text-xs"
-                      onClick={() => setFormData({ email: "consumer@test.com", password: "password123" })}
-                    >
-                      consumer@test.com
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Business Owner:</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 text-xs"
-                      onClick={() => setFormData({ email: "owner@test.com", password: "password123" })}
-                    >
-                      owner@test.com
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Admin:</span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 text-xs"
-                      onClick={() => setFormData({ email: "admin@test.com", password: "password123" })}
-                    >
-                      admin@test.com
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2">Password: password123</p>
-                </div>
-              </div>
-            )}
 
             <p className="text-center text-sm text-gray-600">
               Don't have an account?{" "}

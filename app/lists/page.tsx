@@ -34,51 +34,6 @@ interface ListBusiness {
 
 const STORAGE_KEY = "manakhaah-user-lists";
 
-const mockPublicLists: BusinessList[] = [
-  {
-    id: "public-1",
-    name: "Best Halal Restaurants in LA",
-    description: "My curated list of the top halal restaurants in Los Angeles, tried and tested!",
-    authorId: "user1",
-    authorName: "Ahmed M.",
-    isPublic: true,
-    businessIds: ["b1", "b2", "b3", "b4"],
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    likeCount: 45,
-    viewCount: 234,
-    tags: ["halal", "restaurants", "LA"],
-  },
-  {
-    id: "public-2",
-    name: "Muslim-Friendly Services",
-    description: "A collection of Muslim-owned service providers: plumbers, electricians, mechanics, and more.",
-    authorId: "user2",
-    authorName: "Fatima K.",
-    isPublic: true,
-    businessIds: ["b5", "b6", "b7"],
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    likeCount: 32,
-    viewCount: 156,
-    tags: ["services", "trusted"],
-  },
-  {
-    id: "public-3",
-    name: "Ramadan Essentials",
-    description: "Where to get dates, specialty items, and late-night food during Ramadan.",
-    authorId: "user3",
-    authorName: "Omar S.",
-    isPublic: true,
-    businessIds: ["b8", "b9"],
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    likeCount: 78,
-    viewCount: 412,
-    tags: ["ramadan", "halal", "grocery"],
-  },
-];
-
 export default function ListsPage() {
   const { data: session } = useMockSession();
   const [myLists, setMyLists] = useState<BusinessList[]>([]);
@@ -105,16 +60,13 @@ export default function ListsPage() {
         if (session?.user?.id) {
           setMyLists(allLists.filter((l) => l.authorId === session.user.id));
         }
-        setPublicLists([
-          ...mockPublicLists,
-          ...allLists.filter((l) => l.isPublic && l.authorId !== session?.user?.id),
-        ]);
+        setPublicLists(allLists.filter((l) => l.isPublic && l.authorId !== session?.user?.id));
       } else {
-        setPublicLists(mockPublicLists);
+        setPublicLists([]);
       }
     } catch (error) {
       console.error("Error loading lists:", error);
-      setPublicLists(mockPublicLists);
+      setPublicLists([]);
     }
   };
 
@@ -131,10 +83,7 @@ export default function ListsPage() {
       setMyLists(lists);
 
       // Update public lists
-      setPublicLists([
-        ...mockPublicLists,
-        ...updatedLists.filter((l) => l.isPublic && l.authorId !== session?.user?.id),
-      ]);
+      setPublicLists(updatedLists.filter((l) => l.isPublic && l.authorId !== session?.user?.id));
     } catch (error) {
       console.error("Error saving lists:", error);
     }

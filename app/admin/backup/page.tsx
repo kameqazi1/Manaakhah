@@ -15,33 +15,6 @@ interface Backup {
   status: "completed" | "failed" | "in_progress";
 }
 
-const MOCK_BACKUPS: Backup[] = [
-  {
-    id: "1",
-    name: "Full Backup - January 2026",
-    createdAt: "2026-01-10T10:30:00Z",
-    size: "256 MB",
-    type: "full",
-    status: "completed",
-  },
-  {
-    id: "2",
-    name: "Incremental Backup",
-    createdAt: "2026-01-09T10:30:00Z",
-    size: "45 MB",
-    type: "incremental",
-    status: "completed",
-  },
-  {
-    id: "3",
-    name: "Full Backup - December 2025",
-    createdAt: "2025-12-31T10:30:00Z",
-    size: "248 MB",
-    type: "full",
-    status: "completed",
-  },
-];
-
 export default function BackupPage() {
   const { data: session } = useMockSession();
   const [backups, setBackups] = useState<Backup[]>([]);
@@ -52,16 +25,16 @@ export default function BackupPage() {
   const [backupFrequency, setBackupFrequency] = useState("daily");
 
   useEffect(() => {
-    // Load backups from localStorage or use defaults
+    // Load backups from localStorage
     const savedBackups = localStorage.getItem("admin-backups");
     if (savedBackups) {
       try {
         setBackups(JSON.parse(savedBackups));
       } catch {
-        setBackups(MOCK_BACKUPS);
+        setBackups([]);
       }
     } else {
-      setBackups(MOCK_BACKUPS);
+      setBackups([]);
     }
 
     const settings = localStorage.getItem("admin-backup-settings");

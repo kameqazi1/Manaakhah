@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { getMockSession, mockLogout, type MockSession } from "@/lib/mock-auth";
 
@@ -22,24 +22,25 @@ function MockSessionInner({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<MockSession | null>(null);
   const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
 
-  const loadSession = () => {
+  const loadSession = useCallback(() => {
     const mockSession = getMockSession();
     setSession(mockSession);
     setStatus(mockSession ? "authenticated" : "unauthenticated");
-  };
+  }, []);
 
   useEffect(() => {
     loadSession();
-  }, []);
+  }, [loadSession]);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    data: session,
+    status,
+    update: loadSession,
+  }), [session, status, loadSession]);
 
   return (
-    <MockSessionContext.Provider
-      value={{
-        data: session,
-        status,
-        update: loadSession,
-      }}
-    >
+    <MockSessionContext.Provider value={contextValue}>
       {children}
     </MockSessionContext.Provider>
   );
@@ -63,6 +64,7 @@ function useMockContext() {
 
 /**
  * Unified session hook that works with both mock and real auth
+ * Returns memoized values to prevent infinite re-render loops
  */
 export function useMockSession() {
   // In production mode, use NextAuth's useSession
@@ -70,13 +72,15 @@ export function useMockSession() {
   const nextAuthSession = USE_MOCK_DATA ? null : useSession();
   const mockContext = useMockContext();
 
-  if (USE_MOCK_DATA) {
-    return mockContext;
-  }
+  // Memoize the update function for production mode
+  const updateFn = useCallback(() => {
+    nextAuthSession?.update?.();
+  }, [nextAuthSession]);
 
-  // Map NextAuth session to our interface
-  return {
-    data: nextAuthSession?.data ? {
+  // Memoize the mapped session data for production mode
+  const mappedData = useMemo(() => {
+    if (!nextAuthSession?.data) return null;
+    return {
       user: {
         id: nextAuthSession.data.user?.id || "",
         email: nextAuthSession.data.user?.email || "",
@@ -85,10 +89,21 @@ export function useMockSession() {
         image: nextAuthSession.data.user?.image || null,
       },
       expires: nextAuthSession.data.expires,
-    } : null,
+    };
+  }, [nextAuthSession?.data]);
+
+  // Memoize the full return object
+  const productionSession = useMemo(() => ({
+    data: mappedData,
     status: nextAuthSession?.status || "loading",
-    update: () => nextAuthSession?.update?.(),
-  };
+    update: updateFn,
+  }), [mappedData, nextAuthSession?.status, updateFn]);
+
+  if (USE_MOCK_DATA) {
+    return mockContext;
+  }
+
+  return productionSession;
 }
 
 /**

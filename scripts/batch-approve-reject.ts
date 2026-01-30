@@ -87,32 +87,48 @@ async function batchUpdate() {
 
       const metadata = (scraped.metadata || {}) as any;
 
-      // Create business
-      await db.business.create({
-        data: {
-          name: scraped.name,
-          slug,
-          description: scraped.description || scraped.name + " in " + scraped.city,
-          category: scraped.category,
-          address: scraped.address,
-          city: scraped.city,
-          state: scraped.state,
-          zipCode: scraped.zipCode,
-          latitude: scraped.latitude || 37.5485,
-          longitude: scraped.longitude || -121.9886,
-          phone: scraped.phone || "",
-          email: scraped.email,
-          website: scraped.website || scraped.sourceUrl,
-          ownerId: ownerId,
-          status: "PUBLISHED",
-          verificationStatus: "UNVERIFIED",
-          isScraped: true,
-          scrapedBusinessId: scraped.id,
-          scrapedFrom: metadata.source || scraped.sourceUrl,
-          scrapedAt: scraped.scrapedAt,
-          confidenceScore: metadata.confidence || null,
-        },
-      });
+      // Create business using raw SQL to avoid schema mismatch
+      const websiteVal = scraped.website || scraped.sourceUrl || null;
+      const descVal = scraped.description || `${scraped.name} in ${scraped.city}`;
+      const latVal = scraped.latitude || 37.5485;
+      const lngVal = scraped.longitude || -121.9886;
+      const phoneVal = scraped.phone || "";
+      const confScore = metadata.confidence || null;
+
+      await db.$executeRaw`
+        INSERT INTO "Business" (
+          id, "ownerId", name, slug, description, category,
+          address, city, state, "zipCode", latitude, longitude,
+          phone, email, website, status, "verificationStatus",
+          "isScraped", "scrapedBusinessId", "scrapedFrom", "scrapedAt",
+          "confidenceScore", "createdAt", "updatedAt"
+        ) VALUES (
+          ${`biz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`},
+          ${ownerId},
+          ${scraped.name},
+          ${slug},
+          ${descVal},
+          ${scraped.category}::"BusinessCategory",
+          ${scraped.address},
+          ${scraped.city},
+          ${scraped.state},
+          ${scraped.zipCode},
+          ${latVal},
+          ${lngVal},
+          ${phoneVal},
+          ${scraped.email},
+          ${websiteVal},
+          'PUBLISHED'::"BusinessStatus",
+          'PENDING'::"VerificationStatus",
+          true,
+          ${scraped.id},
+          ${metadata.source || scraped.sourceUrl},
+          ${scraped.scrapedAt},
+          ${confScore},
+          NOW(),
+          NOW()
+        )
+      `;
 
       // Update scraped status
       await db.scrapedBusiness.update({

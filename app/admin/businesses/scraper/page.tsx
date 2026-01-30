@@ -246,20 +246,21 @@ const FILTER_PRESETS: FilterPreset[] = [
 ];
 
 // All available sources with implementation status
-const ALL_SOURCES: { id: DataSource; name: string; description: string; implemented: boolean }[] = [
+// Note: "requiresBrowser" means it uses Puppeteer and won't work on Vercel serverless
+const ALL_SOURCES: { id: DataSource; name: string; description: string; implemented: boolean; requiresBrowser: boolean }[] = [
   // IMPLEMENTED - Halal certification directories
-  { id: "hfsaa", name: "HFSAA", description: "Halal Food Standards Alliance of America - certified listings", implemented: true },
-  { id: "hms", name: "HMS", description: "Halal Monitoring Services USA - certified listings", implemented: true },
-  { id: "zabihah", name: "Zabihah", description: "Zabihah.com - halal restaurant directory", implemented: true },
-  { id: "ifanca", name: "IFANCA", description: "IFANCA certified manufacturers & processors", implemented: true },
+  { id: "ifanca", name: "IFANCA", description: "IFANCA certified manufacturers & processors", implemented: true, requiresBrowser: false },
+  { id: "hfsaa", name: "HFSAA", description: "Halal Food Standards Alliance of America (requires local CLI)", implemented: true, requiresBrowser: true },
+  { id: "hms", name: "HMS", description: "Halal Monitoring Services USA (requires local CLI)", implemented: true, requiresBrowser: true },
+  { id: "zabihah", name: "Zabihah", description: "Zabihah.com halal restaurant directory (requires local CLI)", implemented: true, requiresBrowser: true },
   // NOT YET IMPLEMENTED
-  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (no public directory)", implemented: false },
-  { id: "halaltrip", name: "HalalTrip", description: "Halal travel & dining (coming soon)", implemented: false },
-  { id: "muslimpro", name: "Muslim Pro", description: "Halal finder app (coming soon)", implemented: false },
-  { id: "google_places", name: "Google Places", description: "Google Maps (coming soon)", implemented: false },
-  { id: "yelp", name: "Yelp", description: "Yelp reviews (coming soon)", implemented: false },
-  { id: "yellowpages", name: "Yellow Pages", description: "Business directory (coming soon)", implemented: false },
-  { id: "bbb", name: "BBB", description: "Better Business Bureau (coming soon)", implemented: false },
+  { id: "isna", name: "ISNA", description: "ISNA Halal Certification (no public directory)", implemented: false, requiresBrowser: false },
+  { id: "halaltrip", name: "HalalTrip", description: "Halal travel & dining (coming soon)", implemented: false, requiresBrowser: false },
+  { id: "muslimpro", name: "Muslim Pro", description: "Halal finder app (coming soon)", implemented: false, requiresBrowser: false },
+  { id: "google_places", name: "Google Places", description: "Google Maps (coming soon)", implemented: false, requiresBrowser: false },
+  { id: "yelp", name: "Yelp", description: "Yelp reviews (coming soon)", implemented: false, requiresBrowser: false },
+  { id: "yellowpages", name: "Yellow Pages", description: "Business directory (coming soon)", implemented: false, requiresBrowser: false },
+  { id: "bbb", name: "BBB", description: "Better Business Bureau (coming soon)", implemented: false, requiresBrowser: false },
 ];
 
 // Get only implemented sources
@@ -354,7 +355,7 @@ export default function EnhancedScraperPage() {
     radius: "10",
     categories: [],
     tags: [],
-    sources: ["hfsaa", "hms"], // Default to implemented sources
+    sources: ["ifanca"], // Default to IFANCA (only one that works on Vercel)
     minConfidence: "50",
     maxResultsPerSource: "20",
     verificationLevel: [],
@@ -740,44 +741,53 @@ export default function EnhancedScraperPage() {
                   {/* Sources Tab */}
                   {activeTab === "sources" && (
                     <div className="space-y-4">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                        <p className="text-sm text-blue-800">
-                          <strong>Note:</strong> Currently implemented sources (HFSAA, HMS) scrape
-                          halal-certified businesses from certification directories. They fetch all
-                          certified listings and filter by state if specified.
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-amber-800">
+                          <strong>Vercel Limitation:</strong> Most scrapers require browser automation (Puppeteer)
+                          which doesn&apos;t work on Vercel serverless. Only <strong>IFANCA</strong> works here.
+                          For HFSAA, HMS, and Zabihah, run the CLI locally:
                         </p>
+                        <code className="block mt-2 text-xs bg-amber-100 p-2 rounded">
+                          npx tsx scripts/scrape-hfsaa.ts --state=CA --verbose
+                        </code>
                       </div>
                       <div>
                         <Label className="text-base font-semibold">Data Sources</Label>
                         <p className="text-xs text-gray-500 mb-3">
-                          Select which sources to scrape from (only "Ready" sources are active)
+                          Select sources to scrape. Sources marked &quot;Local CLI&quot; require running locally.
                         </p>
                         <div className="grid gap-2">
-                          {ALL_SOURCES.map((source) => (
+                          {ALL_SOURCES.map((source) => {
+                            const isDisabled = !source.implemented || source.requiresBrowser;
+                            return (
                             <label
                               key={source.id}
                               className={`flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-gray-50 ${
                                 formData.sources.includes(source.id)
                                   ? "border-primary bg-primary/5"
                                   : ""
-                              }`}
+                              } ${isDisabled ? "opacity-60" : ""}`}
                             >
                               <input
                                 type="checkbox"
                                 checked={formData.sources.includes(source.id)}
                                 onChange={() => toggleSource(source.id)}
                                 className="rounded"
-                                disabled={!source.implemented}
+                                disabled={isDisabled}
                               />
                               <div className="flex-1">
-                                <span className={`font-medium ${!source.implemented ? "text-gray-400" : ""}`}>
+                                <span className={`font-medium ${isDisabled ? "text-gray-400" : ""}`}>
                                   {source.name}
                                 </span>
                                 <p className="text-xs text-gray-500">{source.description}</p>
                               </div>
-                              {source.implemented ? (
+                              {source.implemented && !source.requiresBrowser ? (
                                 <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
                                   Ready
+                                </span>
+                              ) : source.implemented && source.requiresBrowser ? (
+                                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                                  Local CLI
                                 </span>
                               ) : (
                                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
@@ -785,7 +795,7 @@ export default function EnhancedScraperPage() {
                                 </span>
                               )}
                             </label>
-                          ))}
+                          )})}
                         </div>
                       </div>
 

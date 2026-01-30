@@ -1,6 +1,12 @@
 #!/usr/bin/env npx tsx
 import "dotenv/config";
 import { db } from "../lib/db";
+import { ScrapedBusinessClaimStatus } from "@prisma/client";
+
+type ScrapedSelection = {
+  metadata: unknown;
+  claimStatus: ScrapedBusinessClaimStatus;
+};
 
 async function checkStatus() {
   const scraped = await db.scrapedBusiness.findMany({
@@ -9,7 +15,7 @@ async function checkStatus() {
 
   const bySourceAndStatus: Record<string, Record<string, number>> = {};
 
-  scraped.forEach((s) => {
+  scraped.forEach((s: ScrapedSelection) => {
     const source = (s.metadata as any)?.source || "unknown";
     const status = s.claimStatus;
     if (bySourceAndStatus[source] === undefined) {

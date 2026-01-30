@@ -73,25 +73,40 @@ async function batchUpdate() {
       const scraped = await db.scrapedBusiness.findUnique({ where: { id } });
       if (!scraped) continue;
 
-      // Generate slug
+      // Generate slug with random suffix to prevent race conditions
       const baseSlug = scraped.name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
-      const existing = await db.business.findMany({
-        where: { slug: { startsWith: baseSlug } },
-        select: { slug: true },
-      });
-      const slug =
-        existing.length === 0 ? baseSlug : baseSlug + "-" + (existing.length + 1);
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const slug = `${baseSlug}-${randomSuffix}`;
 
       const metadata = (scraped.metadata || {}) as any;
+
+      // Check for duplicates before creating
+      const existingBiz = await db.business.findFirst({
+        where: {
+          OR: [
+            { name: scraped.name, city: scraped.city },
+            ...(scraped.phone ? [{ phone: scraped.phone }] : []),
+            { address: scraped.address, city: scraped.city },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (existingBiz) {
+        errors++;
+        errorDetails.push(`Duplicate: ${scraped.name} in ${scraped.city}`);
+        continue;
+      }
 
       // Create business using raw SQL to avoid schema mismatch
       const websiteVal = scraped.website || scraped.sourceUrl || null;
       const descVal = scraped.description || `${scraped.name} in ${scraped.city}`;
-      const latVal = scraped.latitude || 37.5485;
-      const lngVal = scraped.longitude || -121.9886;
+      // Use null for missing coordinates instead of default Fremont values
+      const latVal = scraped.latitude || null;
+      const lngVal = scraped.longitude || null;
       const phoneVal = scraped.phone || "";
       const confScore = metadata.confidence || null;
 

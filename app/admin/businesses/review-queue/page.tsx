@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useMockSession } from "@/components/mock-session-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,26 @@ interface ScrapedBusiness {
   claimStatus: string;
   reviewedAt?: Date;
   metadata: any;
+  latitude?: number;
+  longitude?: number;
 }
 
-// Helper to get validation result for a scraped business
-function getValidation(business: ScrapedBusiness): ValidationResult {
-  // Cast to the format expected by validateBusinessEntry
-  return validateBusinessEntry(business as any);
+interface ActionError {
+  businessId: string;
+  message: string;
+  type: "duplicate" | "transaction" | "general";
+  details?: any;
+}
+
+interface ActionSuccess {
+  businessId: string;
+  message: string;
+  missingCoordinates?: boolean;
+}
+
+// Extended type with pre-computed validation
+interface BusinessWithValidation extends ScrapedBusiness {
+  validation: ValidationResult;
 }
 
 export default function ReviewQueuePage() {
@@ -40,6 +54,57 @@ export default function ReviewQueuePage() {
   const [businesses, setBusinesses] = useState<ScrapedBusiness[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("PENDING_REVIEW");
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [actionErrors, setActionErrors] = useState<ActionError[]>([]);
+  const [actionSuccesses, setActionSuccesses] = useState<ActionSuccess[]>([]);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
+  // Memoize validation results - computed once when businesses change, not on every render
+  const businessesWithValidation = useMemo<BusinessWithValidation[]>(() => {
+    return businesses.map((business) => ({
+      ...business,
+      validation: validateBusinessEntry(business as any),
+    }));
+  }, [businesses]);
+
+  // Clear notifications after 5 seconds
+  useEffect(() => {
+    if (actionErrors.length > 0 || actionSuccesses.length > 0) {
+      const timer = setTimeout(() => {
+        setActionErrors([]);
+        setActionSuccesses([]);
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionErrors, actionSuccesses]);
+
+  const fetchScrapedBusinesses = useCallback(async () => {
+    try {
+      setFetchError(null);
+      const params = new URLSearchParams();
+      if (filter !== "all") {
+        params.append("claimStatus", filter);
+      }
+
+      // Auth is handled server-side via session cookies - no spoofable headers needed
+      const response = await fetch(`/api/admin/scraped-businesses?${params}`, {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBusinesses(data.businesses);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setFetchError(errorData.error || `Failed to load businesses (${response.status})`);
+      }
+    } catch (error) {
+      console.error("Error fetching scraped businesses:", error);
+      setFetchError("Network error - unable to load businesses");
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
 
   useEffect(() => {
     if (session?.user?.role !== "ADMIN") {
@@ -47,53 +112,102 @@ export default function ReviewQueuePage() {
       return;
     }
     fetchScrapedBusinesses();
-  }, [session, filter]);
-
-  const fetchScrapedBusinesses = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (filter !== "all") {
-        params.append("claimStatus", filter);
-      }
-
-      const response = await fetch(`/api/admin/scraped-businesses?${params}`, {
-        headers: {
-          "x-user-id": session?.user?.id || "",
-          "x-user-role": session?.user?.role || "",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setBusinesses(data.businesses);
-      }
-    } catch (error) {
-      console.error("Error fetching scraped businesses:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [session, filter, fetchScrapedBusinesses, router]);
 
   const handleAction = async (businessId: string, action: "approve" | "reject") => {
+    // Add to processing set
+    setProcessingIds((prev) => new Set(prev).add(businessId));
+
+    // Clear previous errors for this business
+    setActionErrors((prev) => prev.filter((e) => e.businessId !== businessId));
+    setActionSuccesses((prev) => prev.filter((s) => s.businessId !== businessId));
+
     try {
+      // Auth is handled server-side via session cookies - no spoofable headers needed
       const response = await fetch(`/api/admin/scraped-businesses/${businessId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": session?.user?.id || "",
-          "x-user-role": session?.user?.role || "",
         },
+        credentials: "include",
         body: JSON.stringify({
           claimStatus: action === "approve" ? "APPROVED" : "REJECTED",
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
+        // Success
+        const business = businesses.find((b) => b.id === businessId);
+        setActionSuccesses((prev) => [
+          ...prev,
+          {
+            businessId,
+            message: `"${business?.name}" ${action === "approve" ? "approved" : "rejected"} successfully`,
+            missingCoordinates: data.missingCoordinates,
+          },
+        ]);
         fetchScrapedBusinesses();
+      } else if (response.status === 409) {
+        // Duplicate detected
+        setActionErrors((prev) => [
+          ...prev,
+          {
+            businessId,
+            message: data.message || "Duplicate business detected",
+            type: "duplicate",
+            details: data.duplicate,
+          },
+        ]);
+      } else if (response.status === 500 && data.failedStep) {
+        // Transaction failure
+        setActionErrors((prev) => [
+          ...prev,
+          {
+            businessId,
+            message: `${data.error}: ${data.failedStep}`,
+            type: "transaction",
+            details: data.details,
+          },
+        ]);
+      } else {
+        // General error
+        setActionErrors((prev) => [
+          ...prev,
+          {
+            businessId,
+            message: data.error || `Failed to ${action} business`,
+            type: "general",
+          },
+        ]);
       }
     } catch (error) {
       console.error(`Error ${action}ing business:`, error);
+      setActionErrors((prev) => [
+        ...prev,
+        {
+          businessId,
+          message: `Network error while trying to ${action}`,
+          type: "general",
+        },
+      ]);
+    } finally {
+      // Remove from processing set
+      setProcessingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(businessId);
+        return next;
+      });
     }
+  };
+
+  const dismissError = (businessId: string) => {
+    setActionErrors((prev) => prev.filter((e) => e.businessId !== businessId));
+  };
+
+  const dismissSuccess = (businessId: string) => {
+    setActionSuccesses((prev) => prev.filter((s) => s.businessId !== businessId));
   };
 
   const getStatusBadge = (status: string) => {
@@ -131,6 +245,94 @@ export default function ReviewQueuePage() {
             Review and approve businesses scraped from the web
           </p>
         </div>
+
+        {/* Global Error/Success Notifications */}
+        {(actionErrors.length > 0 || actionSuccesses.length > 0) && (
+          <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+            {actionSuccesses.map((success) => (
+              <div
+                key={success.businessId}
+                className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600">✓</span>
+                    <div>
+                      <p className="text-green-800 font-medium">{success.message}</p>
+                      {success.missingCoordinates && (
+                        <p className="text-yellow-700 text-sm mt-1">
+                          ⚠️ Missing coordinates - map display may be affected
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => dismissSuccess(success.businessId)}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+            {actionErrors.map((error) => (
+              <div
+                key={error.businessId}
+                className={`border rounded-lg p-4 shadow-lg ${
+                  error.type === "duplicate"
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-red-50 border-red-200"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-2">
+                    <span className={error.type === "duplicate" ? "text-yellow-600" : "text-red-600"}>
+                      {error.type === "duplicate" ? "⚠️" : "✗"}
+                    </span>
+                    <div>
+                      <p className={`font-medium ${error.type === "duplicate" ? "text-yellow-800" : "text-red-800"}`}>
+                        {error.message}
+                      </p>
+                      {error.type === "duplicate" && error.details && (
+                        <p className="text-yellow-700 text-sm mt-1">
+                          Existing: {error.details.name} at {error.details.address}
+                        </p>
+                      )}
+                      {error.type === "transaction" && error.details && (
+                        <p className="text-red-700 text-sm mt-1 font-mono">
+                          {error.details.substring(0, 100)}...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => dismissError(error.businessId)}
+                    className={error.type === "duplicate" ? "text-yellow-600 hover:text-yellow-800" : "text-red-600 hover:text-red-800"}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Fetch Error Banner */}
+        {fetchError && (
+          <Card className="mb-6 border-red-200 bg-red-50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-red-800">
+                  <span>✗</span>
+                  <span>{fetchError}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => fetchScrapedBusinesses()}>
+                  Retry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Filters */}
         <Card className="mb-6">
@@ -175,7 +377,7 @@ export default function ReviewQueuePage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {businesses.map((business) => (
+            {businessesWithValidation.map((business) => (
               <Card key={business.id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -192,47 +394,42 @@ export default function ReviewQueuePage() {
                             </span>
                             {getStatusBadge(business.claimStatus)}
                           </div>
-                          {/* Validation Score and Flags */}
-                          {(() => {
-                            const validation = getValidation(business);
-                            return (
-                              <div className="mt-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {/* Confidence Score Badge */}
+                          {/* Validation Score and Flags - uses memoized validation */}
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Confidence Score Badge */}
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  business.validation.confidence >= 70
+                                    ? "bg-green-100 text-green-800"
+                                    : business.validation.confidence >= 50
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {business.validation.confidence}% confidence
+                              </span>
+                              {/* Low Quality Badge */}
+                              {!business.validation.isLikelyBusiness && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  Low Quality
+                                </span>
+                              )}
+                            </div>
+                            {/* Validation Flags */}
+                            {business.validation.flags.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {business.validation.flags.map((flag, i) => (
                                   <span
-                                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                      validation.confidence >= 70
-                                        ? "bg-green-100 text-green-800"
-                                        : validation.confidence >= 50
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : "bg-red-100 text-red-800"
-                                    }`}
+                                    key={i}
+                                    className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800"
                                   >
-                                    {validation.confidence}% confidence
+                                    {flag.replace(/_/g, " ")}
                                   </span>
-                                  {/* Low Quality Badge */}
-                                  {!validation.isLikelyBusiness && (
-                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                      Low Quality
-                                    </span>
-                                  )}
-                                </div>
-                                {/* Validation Flags */}
-                                {validation.flags.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-1">
-                                    {validation.flags.map((flag, i) => (
-                                      <span
-                                        key={i}
-                                        className="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-800"
-                                      >
-                                        {flag.replace(/_/g, " ")}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
+                                ))}
                               </div>
-                            );
-                          })()}
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -305,19 +502,45 @@ export default function ReviewQueuePage() {
                     {/* Actions */}
                     {business.claimStatus === "PENDING_REVIEW" && (
                       <div className="flex flex-col gap-2 md:min-w-[150px]">
+                        {/* Missing coordinates warning */}
+                        {!business.latitude && !business.longitude && (
+                          <div className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded mb-1">
+                            ⚠️ No coordinates - will need geocoding
+                          </div>
+                        )}
                         <Button
                           onClick={() => handleAction(business.id, "approve")}
                           className="w-full"
+                          disabled={processingIds.has(business.id)}
                         >
-                          ✓ Approve
+                          {processingIds.has(business.id) ? (
+                            <span className="flex items-center gap-2">
+                              <span className="animate-spin">⟳</span> Processing...
+                            </span>
+                          ) : (
+                            "✓ Approve"
+                          )}
                         </Button>
                         <Button
                           variant="destructive"
                           onClick={() => handleAction(business.id, "reject")}
                           className="w-full"
+                          disabled={processingIds.has(business.id)}
                         >
-                          ✗ Reject
+                          {processingIds.has(business.id) ? (
+                            <span className="flex items-center gap-2">
+                              <span className="animate-spin">⟳</span> Processing...
+                            </span>
+                          ) : (
+                            "✗ Reject"
+                          )}
                         </Button>
+                        {/* Inline error for this business */}
+                        {actionErrors.find((e) => e.businessId === business.id) && (
+                          <div className="text-xs text-red-700 bg-red-50 p-2 rounded mt-1">
+                            {actionErrors.find((e) => e.businessId === business.id)?.message}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { isAdmin } from "@/lib/admin-auth";
+import { checkAdminAuth } from "@/lib/admin-auth";
 
 // Force dynamic rendering - prevents static analysis during build
 export const dynamic = "force-dynamic";
@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 // GET /api/admin/scraped-businesses - Get all scraped businesses
 export async function GET(req: Request) {
   try {
-    if (!(await isAdmin(req))) {
+    const auth = await checkAdminAuth(req);
+    if (!auth.authorized) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

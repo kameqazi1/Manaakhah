@@ -150,7 +150,7 @@ export async function PUT(
 
             ownerId, // Validated admin user ID
             status: "PUBLISHED",
-            verificationStatus: "UNVERIFIED",
+            verificationStatus: "PENDING",
             isScraped: true,
             scrapedBusinessId: scraped.id,
             scrapedFrom: metadata.source || scraped.sourceUrl,

@@ -5,6 +5,15 @@
 
 import "dotenv/config";
 import { db } from "../lib/db";
+import { ScrapedBusinessClaimStatus } from "@prisma/client";
+
+// Type for selected fields from scrapedBusiness query
+type ScrapedBusinessSelection = {
+  id: string;
+  name: string;
+  metadata: unknown;
+  claimStatus: ScrapedBusinessClaimStatus;
+};
 
 async function batchUpdate() {
   // Get ALL scraped businesses (not just pending)
@@ -15,7 +24,7 @@ async function batchUpdate() {
   const hfsaaPending: string[] = [];
   const googleYelpToReject: string[] = [];
 
-  all.forEach((b) => {
+  all.forEach((b: ScrapedBusinessSelection) => {
     const source = (b.metadata as any)?.source;
     // HFSAA pending ones to approve
     if (source === "hfsaa" && b.claimStatus === "PENDING_REVIEW") {

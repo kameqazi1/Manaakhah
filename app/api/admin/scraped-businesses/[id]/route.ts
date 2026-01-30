@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkAdminAuth } from "@/lib/admin-auth";
-import { BusinessTag, BusinessCategory, ScrapedBusinessClaimStatus } from "@prisma/client";
+import { BusinessTag, BusinessCategory, ScrapedBusinessClaimStatus, Prisma } from "@prisma/client";
 import { z } from "zod";
 
 // Zod schema for PUT request body
@@ -182,7 +182,7 @@ export async function PUT(
     // CRITICAL: Wrap EVERYTHING in a transaction - including duplicate check
     // This prevents race conditions where two concurrent approvals both pass the check
     try {
-      const result = await db.$transaction(async (tx) => {
+      const result = await db.$transaction(async (tx: Prisma.TransactionClient) => {
         // Step 1: Check for duplicates INSIDE the transaction
         // This ensures atomic check-and-create
         const potentialDuplicate = await tx.business.findFirst({

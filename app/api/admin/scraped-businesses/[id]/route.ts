@@ -50,6 +50,9 @@ export async function PUT(
     const body = await req.json();
     const { claimStatus } = body;
 
+    // Get the admin user ID from headers (set by the review queue page)
+    const adminUserId = req.headers.get("x-user-id");
+
     const resolvedParams = await params;
     const businessId = resolvedParams.id;
 
@@ -71,6 +74,24 @@ export async function PUT(
       });
 
       if (scraped) {
+        // Ensure we have a valid owner ID
+        let ownerId = adminUserId;
+        if (!ownerId) {
+          // Fallback: find any admin user to assign as owner
+          const adminUser = await db.user.findFirst({
+            where: { role: "ADMIN" },
+            select: { id: true },
+          });
+          ownerId = adminUser?.id || null;
+        }
+
+        if (!ownerId) {
+          return NextResponse.json(
+            { error: "No valid owner ID found. Please ensure an admin user exists." },
+            { status: 400 }
+          );
+        }
+
         // Parse metadata (stored as Json in ScrapedBusiness)
         const metadata = (scraped.metadata || {}) as {
           photos?: Array<{ url: string; caption?: string; type?: string }>;
@@ -127,7 +148,7 @@ export async function PUT(
               | null,
             serviceList: metadata.serviceList || [],
 
-            ownerId: "system",
+            ownerId, // Validated admin user ID
             status: "PUBLISHED",
             verificationStatus: "UNVERIFIED",
             isScraped: true,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, isMockMode } from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 // GET /api/community/posts/:id/comments - Get comments for a post
 export async function GET(
@@ -58,7 +59,14 @@ export async function POST(
     let userId: string | null = null;
 
     if (isMockMode()) {
+      // Mock mode: Get user from headers
       userId = req.headers.get("x-user-id");
+    } else {
+      // Production mode: Get user from NextAuth session
+      const session = await auth();
+      if (session?.user) {
+        userId = session.user.id as string;
+      }
     }
 
     if (!userId) {

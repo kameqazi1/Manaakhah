@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, isMockMode } from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 // GET /api/community/posts - Get community posts
 export async function GET(req: Request) {
@@ -47,8 +48,16 @@ export async function POST(req: Request) {
     let userRole: string | null = null;
 
     if (isMockMode()) {
+      // Mock mode: Get user from headers
       userId = req.headers.get("x-user-id");
       userRole = req.headers.get("x-user-role");
+    } else {
+      // Production mode: Get user from NextAuth session
+      const session = await auth();
+      if (session?.user) {
+        userId = session.user.id as string;
+        userRole = (session.user as any).role || "CONSUMER";
+      }
     }
 
     if (!userId) {

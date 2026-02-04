@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, isMockMode } from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 // POST /api/community/posts/:id/like - Toggle like on a post
 export async function POST(
@@ -11,7 +12,14 @@ export async function POST(
     let userId: string | null = null;
 
     if (isMockMode()) {
+      // Mock mode: Get user from headers
       userId = req.headers.get("x-user-id");
+    } else {
+      // Production mode: Get user from NextAuth session
+      const session = await auth();
+      if (session?.user) {
+        userId = session.user.id as string;
+      }
     }
 
     if (!userId) {

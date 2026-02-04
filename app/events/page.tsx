@@ -11,22 +11,20 @@ import { EVENT_TYPES } from "@/lib/constants";
 interface Event {
   id: string;
   businessId: string;
-  businessName: string;
+  businessName?: string;
+  business?: { id: string; name: string; slug: string };
   title: string;
   description: string;
-  eventType: string;
-  startDate: string;
-  endDate: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  isVirtual: boolean;
-  virtualLink?: string;
-  imageUrl?: string;
-  isFree: boolean;
-  price?: number;
-  maxAttendees?: number;
-  attendeeCount: number;
+  startTime: string; // DateTime from API
+  endTime: string; // DateTime from API
+  location: string | null;
+  isTicketed: boolean;
+  ticketPrice: number | null;
+  maxAttendees: number | null;
+  currentAttendees: number;
+  coverImage: string | null;
+  isCancelled: boolean;
+  rsvps?: any[];
 }
 
 export default function EventsPage() {
@@ -40,36 +38,35 @@ export default function EventsPage() {
     loadEvents();
   }, []);
 
-  const loadEvents = () => {
-    // Load from localStorage (user-generated events only)
-    const savedEvents = localStorage.getItem("communityEvents");
-    if (savedEvents) {
-      try {
-        setEvents(JSON.parse(savedEvents));
-      } catch {
-        setEvents([]);
-      }
-    } else {
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/events");
+      if (!response.ok) throw new Error("Failed to fetch events");
+
+      const data = await response.json();
+      setEvents(data.events || []);
+    } catch (error) {
+      console.error("Error loading events:", error);
       setEvents([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getEventTypeInfo = (type: string) => {
     return EVENT_TYPES.find((t) => t.value === type);
   };
 
-  const filteredEvents = selectedType
-    ? events.filter((e) => e.eventType === selectedType)
-    : events;
+  const filteredEvents = events; // All events for now
 
   const upcomingEvents = filteredEvents
-    .filter((e) => new Date(e.startDate) >= new Date())
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+    .filter((e) => new Date(e.startTime) >= new Date())
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
   const pastEvents = filteredEvents
-    .filter((e) => new Date(e.startDate) < new Date())
-    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    .filter((e) => new Date(e.startTime) < new Date())
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -80,12 +77,12 @@ export default function EventsPage() {
     });
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -110,7 +107,7 @@ export default function EventsPage() {
 
   const getEventsForDate = (date: Date) => {
     return filteredEvents.filter((e) => {
-      const eventDate = new Date(e.startDate);
+      const eventDate = new Date(e.startTime);
       return (
         eventDate.getDate() === date.getDate() &&
         eventDate.getMonth() === date.getMonth() &&
@@ -119,13 +116,27 @@ export default function EventsPage() {
     });
   };
 
-  const handleRegister = (eventId: string) => {
-    const updatedEvents = events.map((e) =>
-      e.id === eventId ? { ...e, attendeeCount: e.attendeeCount + 1 } : e
-    );
-    setEvents(updatedEvents);
-    localStorage.setItem("communityEvents", JSON.stringify(updatedEvents));
-    alert("You have been registered for this event!");
+  const handleRegister = async (eventId: string) => {
+    try {
+      const response = await fetch(`/api/events/${eventId}/rsvp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "going" }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to register");
+      }
+
+      alert("You have been registered for this event!");
+      await loadEvents(); // Reload events to update counts
+    } catch (error) {
+      console.error("Error registering:", error);
+      alert(error instanceof Error ? error.message : "Failed to register for event");
+    }
   };
 
   if (loading) {
@@ -224,45 +235,42 @@ export default function EventsPage() {
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {upcomingEvents.map((event) => {
-                    const typeInfo = getEventTypeInfo(event.eventType);
-                    const isFull = event.maxAttendees ? event.attendeeCount >= event.maxAttendees : false;
+                    const isFull = event.maxAttendees ? event.currentAttendees >= event.maxAttendees : false;
+                    const businessName = event.business?.name || event.businessName || "Unknown Business";
 
                     return (
                       <Card key={event.id} className="overflow-hidden">
-                        <div className="h-32 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-                          <span className="text-5xl">{typeInfo?.icon}</span>
-                        </div>
+                        {event.coverImage ? (
+                          <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${event.coverImage})` }} />
+                        ) : (
+                          <div className="h-32 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+                            <Calendar className="w-12 h-12 text-green-600" />
+                          </div>
+                        )}
                         <CardContent className="p-4">
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="secondary">{typeInfo?.label}</Badge>
-                            {event.isVirtual && (
-                              <Badge variant="outline">Virtual</Badge>
-                            )}
-                            {event.isFree ? (
+                            {!event.isTicketed ? (
                               <Badge className="bg-green-100 text-green-700">Free</Badge>
                             ) : (
-                              <Badge variant="outline">${event.price}</Badge>
+                              <Badge variant="outline">${event.ticketPrice}</Badge>
                             )}
                           </div>
 
                           <h3 className="font-semibold text-lg mb-1">{event.title}</h3>
-                          <p className="text-sm text-gray-500 mb-2">{event.businessName}</p>
+                          <p className="text-sm text-gray-500 mb-2">{businessName}</p>
                           <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                             {event.description}
                           </p>
 
                           <div className="space-y-1 text-sm text-gray-500 mb-4">
-                            <p>
-                              {formatDate(event.startDate)}
-                              {event.startDate !== event.endDate && ` - ${formatDate(event.endDate)}`}
-                            </p>
+                            <p>{formatDate(event.startTime)}</p>
                             <p>{formatTime(event.startTime)} - {formatTime(event.endTime)}</p>
-                            <p className="line-clamp-1">{event.location}</p>
+                            {event.location && <p className="line-clamp-1">{event.location}</p>}
                           </div>
 
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-500">
-                              {event.attendeeCount} attending
+                              {event.currentAttendees} attending
                               {event.maxAttendees && ` / ${event.maxAttendees}`}
                             </span>
                             <Button
@@ -287,19 +295,19 @@ export default function EventsPage() {
                 <h2 className="text-xl font-semibold mb-4">Past Events ({pastEvents.length})</h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
                   {pastEvents.slice(0, 6).map((event) => {
-                    const typeInfo = getEventTypeInfo(event.eventType);
+                    const businessName = event.business?.name || event.businessName || "Unknown Business";
 
                     return (
                       <Card key={event.id}>
                         <CardContent className="p-4">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-2xl">{typeInfo?.icon}</span>
+                            <Calendar className="w-5 h-5" />
                             <Badge variant="outline">Past</Badge>
                           </div>
                           <h3 className="font-semibold">{event.title}</h3>
-                          <p className="text-sm text-gray-500">{event.businessName}</p>
-                          <p className="text-sm text-gray-500 mt-2">{formatDate(event.startDate)}</p>
-                          <p className="text-sm text-gray-500">{event.attendeeCount} attended</p>
+                          <p className="text-sm text-gray-500">{businessName}</p>
+                          <p className="text-sm text-gray-500 mt-2">{formatDate(event.startTime)}</p>
+                          <p className="text-sm text-gray-500">{event.currentAttendees} attended</p>
                         </CardContent>
                       </Card>
                     );
@@ -361,14 +369,13 @@ export default function EventsPage() {
                       </div>
                       <div className="space-y-0.5 overflow-hidden">
                         {dayEvents.slice(0, 2).map((event) => {
-                          const typeInfo = getEventTypeInfo(event.eventType);
                           return (
                             <div
                               key={event.id}
                               className="text-xs p-0.5 bg-green-100 rounded truncate cursor-pointer hover:bg-green-200"
                               title={event.title}
                             >
-                              {typeInfo?.icon} {event.title}
+                              {event.title}
                             </div>
                           );
                         })}

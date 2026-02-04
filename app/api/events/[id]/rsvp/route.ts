@@ -48,7 +48,7 @@ export async function POST(
 
     // Check if event is full
     if (event.maxAttendees) {
-      const currentGoingCount = event.rsvps.filter((r) => r.status === "going").length;
+      const currentGoingCount = event.rsvps.filter((r: { status: string }) => r.status === "going").length;
       if (currentGoingCount >= event.maxAttendees && status === "going") {
         return NextResponse.json({ error: "Event is full" }, { status: 400 });
       }

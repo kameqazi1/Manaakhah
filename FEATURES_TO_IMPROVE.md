@@ -47,36 +47,49 @@
 - [ ] Implement actual reward system (credits/discounts)
 - [ ] Send real invite emails via Resend
 
-### 5. Prayer Times - Verify Real Data Source
-**Current State:** UI exists, API route exists
-**Files:** `app/prayer-times/page.tsx`, `app/api/prayer-times/route.ts`, `app/api/islamic/prayer-times/route.ts`
-**Issue:** May be using mock/static data
-**Required:**
-- [ ] Verify API fetches from real prayer time service (Aladhan API or similar)
-- [ ] Handle geolocation for accurate times
-- [ ] Test timezone handling
+### 5. Prayer Times - Verify Real Data Source ✅ COMPLETED (2026-02-04)
+**Current State:** Fetches real prayer times from Aladhan API
+**Files:** `app/prayer-times/page.tsx`, `app/api/islamic/prayer-times/route.ts`
+**Status:** Integrated with Aladhan API (https://api.aladhan.com) with caching
+**Completed:**
+- [x] Replaced mock calculations with real Aladhan API integration
+- [x] Removed 200+ lines of custom prayer time calculations
+- [x] Implemented database caching for API responses
+- [x] Handles geolocation (lat/lng parameters)
+- [x] Includes Hijri date from API
+- [ ] Test timezone handling edge cases (optional enhancement)
 
 ---
 
 ## High Priority (Important for User Experience)
 
-### 6. Community Impact Page - Placeholder Only
-**Current State:** Shows "Impact Data Coming Soon"
-**Files:** `app/community-impact/page.tsx`
-**Issue:** No actual data collection or display
-**Required:**
-- [ ] Define what metrics to track (businesses listed, users, spending)
-- [ ] Build aggregation queries
-- [ ] Create real dashboard with live data
+### 6. Community Impact Page - Real Data ✅ COMPLETED (2026-02-04)
+**Current State:** Displays real community statistics from database
+**Files:** `app/community-impact/page.tsx`, `app/api/community/stats/route.ts`
+**Status:** Live dashboard with real-time data aggregation
+**Completed:**
+- [x] Created `/api/community/stats` endpoint with database aggregations
+- [x] Tracks: total businesses, users, reviews, events, growth rate
+- [x] Shows top cities and business categories
+- [x] Displays growth metrics (month-over-month)
+- [x] Updated page with real data display and empty state
+- [ ] Add date range filters (optional enhancement)
 
-### 7. Spending Insights - Placeholder Only
-**Current State:** Shows "No Spending Data Yet"
-**Files:** `app/insights/page.tsx`
-**Issue:** No mechanism to track user spending
-**Required:**
-- [ ] Design spending tracking approach (manual entry? receipts? check-ins?)
-- [ ] Build data model and API
-- [ ] Create visualization dashboard
+### 7. Spending Insights - Manual Tracking System ✅ COMPLETED (2026-02-04)
+**Current State:** Full spending tracking and visualization system
+**Files:** `app/insights/page.tsx`, `app/api/spending/*`, `prisma/schema.prisma`
+**Status:** Requires database migration (see MIGRATION_REQUIRED.md)
+**Completed:**
+- [x] Created `SpendingEntry` model in Prisma schema
+- [x] Built full CRUD API (GET, POST, PUT, DELETE)
+- [x] Manual entry form for recording purchases
+- [x] Spending summaries with totals and statistics
+- [x] Category-wise spending breakdown with progress bars
+- [x] Top businesses by spending amount
+- [x] Recent transactions list with delete functionality
+- [ ] **PENDING: Run database migration** (see MIGRATION_REQUIRED.md)
+- [ ] Receipt photo upload (future enhancement)
+- [ ] Automatic check-in based spending (future enhancement)
 
 ### 8. Saved Searches - UI Only, No Backend
 **Current State:** Form exists to save searches

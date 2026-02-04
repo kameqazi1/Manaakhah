@@ -404,6 +404,7 @@ model User {
   reportedContent     ContentReport[]
   postReports         PostReport[]
   pendingAccountLinks PendingAccountLink[]
+  spendingEntries     SpendingEntry[]
 
   @@index([email])
   @@index([trustScore])
@@ -630,6 +631,7 @@ model Business {
   fundraisingCampaigns   FundraisingCampaign[]
   messageTemplates       MessageTemplate[]
   analyticsSnapshots     AnalyticsSnapshot[]
+  spendingEntries        SpendingEntry[]
 
   @@index([ownerId])
   @@index([slug])
@@ -1103,6 +1105,25 @@ model Booking {
   @@index([businessId, appointmentDate])
   @@index([customerId])
   @@index([status])
+}
+
+model SpendingEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  businessId  String
+  amount      Float // Amount spent in dollars
+  category    String // Business category (from Business.category)
+  description String?  @db.Text // Optional note about the purchase
+  date        DateTime @default(now()) // When the spending occurred
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([businessId])
+  @@index([category])
 }
 
 model BusinessAvailability {

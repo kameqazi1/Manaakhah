@@ -30,38 +30,34 @@ interface NearbyMasjid {
   hasJummah: boolean;
 }
 
-// Helper to calculate prayer times (simplified mock calculation)
-function calculatePrayerTimes(date: Date, location: Location): PrayerTime[] {
-  // These would normally be calculated based on sun position
-  // Using mock times for demonstration
-  const baseHours = {
-    fajr: 5,
-    sunrise: 6,
-    dhuhr: 12,
-    asr: 15,
-    maghrib: 18,
-    isha: 19,
-  };
+// Fetch prayer times from API (uses Aladhan API)
+async function fetchPrayerTimes(date: Date, location: Location): Promise<PrayerTime[]> {
+  try {
+    const dateStr = date.toISOString().split('T')[0];
+    const response = await fetch(
+      `/api/islamic/prayer-times?lat=${location.lat}&lng=${location.lng}&city=${encodeURIComponent(location.city)}&date=${dateStr}`
+    );
 
-  // Adjust slightly based on latitude (simplified)
-  const latAdjust = Math.abs(location.lat - 34) * 0.02;
+    if (!response.ok) {
+      throw new Error('Failed to fetch prayer times');
+    }
 
-  const formatTime = (hour: number, minute: number = 0) => {
-    const h = Math.floor(hour);
-    const m = Math.floor((hour - h) * 60 + minute);
-    const ampm = h >= 12 ? "PM" : "AM";
-    const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
-  };
+    const data = await response.json();
+    const times = data.prayerTimes.times;
 
-  return [
-    { name: "Fajr", nameArabic: "الفجر", time: formatTime(baseHours.fajr + latAdjust, 30), icon: "🌙" },
-    { name: "Sunrise", nameArabic: "الشروق", time: formatTime(baseHours.sunrise + latAdjust, 45), icon: "🌅" },
-    { name: "Dhuhr", nameArabic: "الظهر", time: formatTime(baseHours.dhuhr + latAdjust, 15), icon: "☀️" },
-    { name: "Asr", nameArabic: "العصر", time: formatTime(baseHours.asr + latAdjust, 45), icon: "🌤️" },
-    { name: "Maghrib", nameArabic: "المغرب", time: formatTime(baseHours.maghrib + latAdjust, 20), icon: "🌇" },
-    { name: "Isha", nameArabic: "العشاء", time: formatTime(baseHours.isha + latAdjust, 30), icon: "🌃" },
-  ];
+    return [
+      { name: "Fajr", nameArabic: "الفجر", time: times.fajr, icon: "🌙" },
+      { name: "Sunrise", nameArabic: "الشروق", time: times.sunrise, icon: "🌅" },
+      { name: "Dhuhr", nameArabic: "الظهر", time: times.dhuhr, icon: "☀️" },
+      { name: "Asr", nameArabic: "العصر", time: times.asr, icon: "🌤️" },
+      { name: "Maghrib", nameArabic: "المغرب", time: times.maghrib, icon: "🌇" },
+      { name: "Isha", nameArabic: "العشاء", time: times.isha, icon: "🌃" },
+    ];
+  } catch (error) {
+    console.error('Error fetching prayer times:', error);
+    // Return empty array on error
+    return [];
+  }
 }
 
 function getNextPrayer(prayerTimes: PrayerTime[]): PrayerTime | null {
@@ -126,11 +122,24 @@ export default function PrayerTimesPage() {
 
   useEffect(() => {
     if (location) {
-      const times = calculatePrayerTimes(selectedDate, location);
-      setPrayerTimes(times);
+      loadPrayerTimes();
       fetchNearbyMasjids();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location, selectedDate]);
+
+  const loadPrayerTimes = async () => {
+    if (!location) return;
+    setLoading(true);
+    try {
+      const times = await fetchPrayerTimes(selectedDate, location);
+      setPrayerTimes(times);
+    } catch (error) {
+      console.error('Error loading prayer times:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchNearbyMasjids = async () => {
     if (!location) return;
@@ -141,7 +150,7 @@ export default function PrayerTimesPage() {
       );
       if (response.ok) {
         const data = await response.json();
-        const masjids: NearbyMasjid[] = (data || []).map((b: any) => ({
+        const masjids: NearbyMasjid[] = (data.businesses || []).map((b: any) => ({
           id: b.id,
           name: b.name,
           distance: b.distance || 0,

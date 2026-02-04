@@ -36,8 +36,6 @@ interface ForumPost {
   lastReplyBy?: string;
 }
 
-const STORAGE_KEY = "manakhaah-forum-posts";
-
 const forumCategories: ForumCategory[] = [
   { id: "general", name: "General Discussion", description: "Open discussions about anything related to the Muslim community", icon: "💬", postCount: 0, color: "bg-blue-100" },
   { id: "business-tips", name: "Business Tips", description: "Share and learn business strategies and advice", icon: "💼", postCount: 0, color: "bg-green-100" },
@@ -53,6 +51,7 @@ export default function ForumPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewPostForm, setShowNewPostForm] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState({
     title: "",
     content: "",
@@ -64,54 +63,87 @@ export default function ForumPage() {
     loadPosts();
   }, []);
 
-  const loadPosts = () => {
+  const loadPosts = async () => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setPosts(JSON.parse(stored));
-      } else {
-        setPosts([]);
-      }
+      setLoading(true);
+      const response = await fetch("/api/community/posts?status=PUBLISHED");
+      if (!response.ok) throw new Error("Failed to fetch posts");
+
+      const data = await response.json();
+
+      // Map CommunityPost to ForumPost format
+      const mappedPosts = data.posts.map((post: any) => ({
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        categoryId: post.tags[0] || "general", // First tag is category
+        authorId: post.authorId,
+        authorName: post.author?.name || "Anonymous",
+        authorAvatar: post.author?.image,
+        createdAt: post.publishedAt || post.createdAt,
+        updatedAt: post.updatedAt,
+        viewCount: post.viewCount,
+        replyCount: post.commentCount,
+        likeCount: post.likeCount,
+        isPinned: post.isPinned,
+        tags: post.tags.slice(1), // Rest are additional tags
+      }));
+
+      setPosts(mappedPosts);
     } catch (error) {
       console.error("Error loading forum posts:", error);
       setPosts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const savePosts = (newPosts: ForumPost[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPosts));
-      setPosts(newPosts);
-    } catch (error) {
-      console.error("Error saving forum posts:", error);
-    }
-  };
-
-  const handleCreatePost = () => {
+  const handleCreatePost = async () => {
     if (!newPost.title.trim() || !newPost.content.trim() || !newPost.categoryId) {
       alert("Please fill in all required fields");
       return;
     }
 
-    const post: ForumPost = {
-      id: Date.now().toString(),
-      title: newPost.title,
-      content: newPost.content,
-      categoryId: newPost.categoryId,
-      authorId: session?.user?.id || "anonymous",
-      authorName: session?.user?.name || "Anonymous",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      viewCount: 0,
-      replyCount: 0,
-      likeCount: 0,
-      isPinned: false,
-      tags: newPost.tags.split(",").map((t) => t.trim()).filter(Boolean),
-    };
+    if (!session?.user?.id) {
+      alert("You must be logged in to create a post");
+      return;
+    }
 
-    savePosts([post, ...posts]);
-    setNewPost({ title: "", content: "", categoryId: "", tags: "" });
-    setShowNewPostForm(false);
+    try {
+      // Combine category as first tag, then additional tags
+      const allTags = [
+        newPost.categoryId,
+        ...newPost.tags.split(",").map((t) => t.trim()).filter(Boolean),
+      ];
+
+      const response = await fetch("/api/community/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": session.user.id,
+          "x-user-role": session.user.role || "CONSUMER",
+        },
+        body: JSON.stringify({
+          title: newPost.title,
+          content: newPost.content,
+          postType: "DISCUSSION",
+          tags: allTags,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create post");
+      }
+
+      // Reload posts
+      await loadPosts();
+      setNewPost({ title: "", content: "", categoryId: "", tags: "" });
+      setShowNewPostForm(false);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      alert(error instanceof Error ? error.message : "Failed to create post");
+    }
   };
 
   const filteredPosts = posts.filter((post) => {
@@ -283,42 +315,50 @@ export default function ForumPage() {
               />
             </div>
 
-            {/* Pinned Posts */}
-            {pinnedPosts.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-500 mb-2 flex items-center gap-1">
-                  📌 Pinned Posts
-                </h3>
-                <div className="space-y-3">
-                  {pinnedPosts.map((post) => (
-                    <PostCard key={post.id} post={post} getCategoryInfo={getCategoryInfo} formatTimeAgo={formatTimeAgo} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Regular Posts */}
-            {regularPosts.length > 0 ? (
-              <div className="space-y-3">
-                {regularPosts.map((post) => (
-                  <PostCard key={post.id} post={post} getCategoryInfo={getCategoryInfo} formatTimeAgo={formatTimeAgo} />
-                ))}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <div className="text-6xl mb-4">💬</div>
-                  <h3 className="text-xl font-semibold mb-2">No Posts Found</h3>
-                  <p className="text-gray-600 mb-4">
-                    {searchQuery
-                      ? "Try adjusting your search terms"
-                      : "Be the first to start a discussion!"}
-                  </p>
-                  {session && !showNewPostForm && (
-                    <Button onClick={() => setShowNewPostForm(true)}>Create First Post</Button>
-                  )}
-                </CardContent>
-              </Card>
+              <>
+                {/* Pinned Posts */}
+                {pinnedPosts.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-gray-500 mb-2 flex items-center gap-1">
+                      📌 Pinned Posts
+                    </h3>
+                    <div className="space-y-3">
+                      {pinnedPosts.map((post) => (
+                        <PostCard key={post.id} post={post} getCategoryInfo={getCategoryInfo} formatTimeAgo={formatTimeAgo} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Regular Posts */}
+                {regularPosts.length > 0 ? (
+                  <div className="space-y-3">
+                    {regularPosts.map((post) => (
+                      <PostCard key={post.id} post={post} getCategoryInfo={getCategoryInfo} formatTimeAgo={formatTimeAgo} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <div className="text-6xl mb-4">💬</div>
+                      <h3 className="text-xl font-semibold mb-2">No Posts Found</h3>
+                      <p className="text-gray-600 mb-4">
+                        {searchQuery
+                          ? "Try adjusting your search terms"
+                          : "Be the first to start a discussion!"}
+                      </p>
+                      {session && !showNewPostForm && (
+                        <Button onClick={() => setShowNewPostForm(true)}>Create First Post</Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
         </div>

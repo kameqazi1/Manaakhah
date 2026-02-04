@@ -34,9 +34,6 @@ interface Reply {
   isAccepted?: boolean;
 }
 
-const POSTS_KEY = "manakhaah-forum-posts";
-const REPLIES_KEY = "manakhaah-forum-replies";
-
 const categoryInfo: Record<string, { name: string; icon: string }> = {
   general: { name: "General Discussion", icon: "💬" },
   "business-tips": { name: "Business Tips", icon: "💼" },
@@ -55,122 +52,143 @@ export default function ForumPostPage() {
   const [newReply, setNewReply] = useState("");
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
+  const [submittingReply, setSubmittingReply] = useState(false);
 
   useEffect(() => {
     loadPost();
     loadReplies();
   }, [params.id]);
 
-  const loadPost = () => {
+  const loadPost = async () => {
     try {
-      const stored = localStorage.getItem(POSTS_KEY);
-      if (stored) {
-        const posts: ForumPost[] = JSON.parse(stored);
-        const foundPost = posts.find((p) => p.id === params.id);
-        if (foundPost) {
-          // Increment view count
-          foundPost.viewCount++;
-          localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-          setPost(foundPost);
+      const response = await fetch(`/api/community/posts/${params.id}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+          setPost(null);
+          setLoading(false);
+          return;
         }
+        throw new Error("Failed to fetch post");
       }
+
+      const data = await response.json();
+      const apiPost = data.post;
+
+      // Map CommunityPost to ForumPost format
+      setPost({
+        id: apiPost.id,
+        title: apiPost.title,
+        content: apiPost.content,
+        categoryId: apiPost.tags[0] || "general",
+        authorId: apiPost.authorId,
+        authorName: apiPost.author?.name || "Anonymous",
+        createdAt: apiPost.publishedAt || apiPost.createdAt,
+        viewCount: apiPost.viewCount,
+        replyCount: apiPost.commentCount,
+        likeCount: apiPost.likeCount,
+        isPinned: apiPost.isPinned,
+        tags: apiPost.tags.slice(1),
+      });
     } catch (error) {
       console.error("Error loading post:", error);
+      setPost(null);
     }
     setLoading(false);
   };
 
-  const loadReplies = () => {
+  const loadReplies = async () => {
     try {
-      const stored = localStorage.getItem(REPLIES_KEY);
-      if (stored) {
-        const allReplies: Reply[] = JSON.parse(stored);
-        setReplies(allReplies.filter((r) => r.postId === params.id));
-      }
+      const response = await fetch(`/api/community/posts/${params.id}/comments`);
+      if (!response.ok) throw new Error("Failed to fetch comments");
+
+      const data = await response.json();
+
+      // Flatten nested comments into replies
+      const flattenComments = (comments: any[]): Reply[] => {
+        const flat: Reply[] = [];
+        comments.forEach((comment) => {
+          flat.push({
+            id: comment.id,
+            postId: params.id as string,
+            content: comment.content,
+            authorId: comment.userId,
+            authorName: comment.user?.name || "Anonymous",
+            createdAt: comment.createdAt,
+            likeCount: comment.likeCount,
+          });
+          if (comment.replies && comment.replies.length > 0) {
+            flat.push(...flattenComments(comment.replies));
+          }
+        });
+        return flat;
+      };
+
+      setReplies(flattenComments(data.comments));
     } catch (error) {
       console.error("Error loading replies:", error);
     }
   };
 
-  const handleSubmitReply = () => {
+  const handleSubmitReply = async () => {
     if (!newReply.trim() || !session?.user) return;
 
-    const reply: Reply = {
-      id: Date.now().toString(),
-      postId: params.id as string,
-      content: newReply,
-      authorId: session.user.id,
-      authorName: session.user.name || "Anonymous",
-      createdAt: new Date().toISOString(),
-      likeCount: 0,
-    };
-
+    setSubmittingReply(true);
     try {
-      const stored = localStorage.getItem(REPLIES_KEY);
-      const allReplies: Reply[] = stored ? JSON.parse(stored) : [];
-      allReplies.push(reply);
-      localStorage.setItem(REPLIES_KEY, JSON.stringify(allReplies));
+      const response = await fetch(`/api/community/posts/${params.id}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": session.user.id,
+        },
+        body: JSON.stringify({
+          content: newReply,
+        }),
+      });
 
-      // Update post reply count
-      if (post) {
-        const postsStored = localStorage.getItem(POSTS_KEY);
-        if (postsStored) {
-          const posts: ForumPost[] = JSON.parse(postsStored);
-          const postIndex = posts.findIndex((p) => p.id === params.id);
-          if (postIndex >= 0) {
-            posts[postIndex].replyCount++;
-            localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-            setPost({ ...post, replyCount: post.replyCount + 1 });
-          }
-        }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to post reply");
       }
 
-      setReplies([...replies, reply]);
+      // Reload replies and post
+      await Promise.all([loadReplies(), loadPost()]);
       setNewReply("");
     } catch (error) {
       console.error("Error saving reply:", error);
+      alert(error instanceof Error ? error.message : "Failed to post reply");
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
-  const handleLikePost = () => {
-    if (!post || liked) return;
+  const handleLikePost = async () => {
+    if (!post || liked || !session?.user) return;
 
     try {
-      const stored = localStorage.getItem(POSTS_KEY);
-      if (stored) {
-        const posts: ForumPost[] = JSON.parse(stored);
-        const postIndex = posts.findIndex((p) => p.id === params.id);
-        if (postIndex >= 0) {
-          posts[postIndex].likeCount++;
-          localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
-          setPost({ ...post, likeCount: post.likeCount + 1 });
-          setLiked(true);
-        }
-      }
+      const response = await fetch(`/api/community/posts/${params.id}/like`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": session.user.id,
+        },
+        body: JSON.stringify({
+          isLiked: true,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to like post");
+
+      const data = await response.json();
+      setPost({ ...post, likeCount: data.likeCount });
+      setLiked(true);
     } catch (error) {
       console.error("Error liking post:", error);
     }
   };
 
-  const handleLikeReply = (replyId: string) => {
-    try {
-      const stored = localStorage.getItem(REPLIES_KEY);
-      if (stored) {
-        const allReplies: Reply[] = JSON.parse(stored);
-        const replyIndex = allReplies.findIndex((r) => r.id === replyId);
-        if (replyIndex >= 0) {
-          allReplies[replyIndex].likeCount++;
-          localStorage.setItem(REPLIES_KEY, JSON.stringify(allReplies));
-          setReplies(
-            replies.map((r) =>
-              r.id === replyId ? { ...r, likeCount: r.likeCount + 1 } : r
-            )
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error liking reply:", error);
-    }
+  const handleLikeReply = async (replyId: string) => {
+    // Comments don't have a like endpoint yet - would need to implement
+    console.log("Like reply not yet implemented:", replyId);
   };
 
   const formatDate = (dateString: string) => {
@@ -339,9 +357,13 @@ export default function ForumPostPage() {
                 placeholder="Share your thoughts..."
                 rows={4}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent mb-3"
+                disabled={submittingReply}
               />
-              <Button onClick={handleSubmitReply} disabled={!newReply.trim()}>
-                Post Reply
+              <Button
+                onClick={handleSubmitReply}
+                disabled={!newReply.trim() || submittingReply}
+              >
+                {submittingReply ? "Posting..." : "Post Reply"}
               </Button>
             </CardContent>
           </Card>
